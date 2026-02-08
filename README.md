@@ -17,8 +17,8 @@ A simple web tool that generates switch configurations for Cisco and HPE/Aruba d
 
 ### Run
 ```bash
-git clone https://github.com/solopx/NetConfGen.git
-cd NetConfGen.git
+git clone https://github.com/solopx/netconfgen.git
+cd netconfgen.git
 pip install -r requirements.txt
 export SESSION_SECRET="any-random-string"
 python main.py
