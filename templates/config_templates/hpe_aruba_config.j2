@@ -1,0 +1,74 @@
+sysname {{ hostname }}
+{% if snmp_community %}
+snmp-agent community read {{ snmp_community }}
+{% endif %}
+{% if ntp_server %}
+ntp-service unicast-server {{ ntp_server }}
+{% endif %}
+{% if syslog_server %}
+info-center loghost {{ syslog_server }}
+{% endif %}
+{% if dns_server %}
+dns server {{ dns_server }}
+{% endif %}
+
+{# VLAN Configuration #}
+{% for vlan in vlans %}
+vlan {{ vlan.id }}
+  name "{{ vlan.name }}"
+!
+{% if vlan.ip_address and vlan.prefix_length %}
+interface Vlan-interface{{ vlan.id }}
+  ip address {{ vlan.ip_address }} {{ vlan.prefix_length | ip_prefix_to_netmask }}
+{% if vlan.helper_addresses %}
+{% for helper in vlan.helper_addresses %}
+  ip helper-address {{ helper }}
+{% endfor %}
+{% endif %}
+!
+{% endif %}
+{% endfor %}
+
+{# Physical Interface Configuration #}
+{% for interface in interfaces %}
+{% if '-' in interface.name %}
+interface range {{ interface.name }}
+{% else %}
+interface {{ interface.name }}
+{% endif %}
+  port link-mode bridge
+{% if interface.description is defined and interface.description %}
+  description {{ interface.description }}
+{% endif %}
+{% if interface.mode == 'access' %}
+{% if interface.voice_vlan is defined and interface.voice_vlan %}
+  port link-type hybrid
+  undo port hybrid vlan 1
+  port hybrid vlan {{ interface.access_vlan }} untagged
+  port hybrid pvid vlan {{ interface.access_vlan }}
+  voice vlan {{ interface.voice_vlan }} enable
+{% else %}
+  port access vlan {{ interface.access_vlan }}
+{% endif %}
+{% if interface.portfast is defined and interface.portfast %}
+  stp edged-port enable
+{% endif %}
+{% if interface.bpduguard is defined and interface.bpduguard %}
+  stp port bpdu-protection enable
+{% endif %}
+{% elif interface.mode == 'trunk' %}
+  port link-type trunk
+  port trunk permit vlan {{ interface.allowed_vlans }}
+{% endif %}
+{% if interface.shutdown is defined and interface.shutdown %}
+  shutdown
+{% else %}
+  undo shutdown
+{% endif %}
+!
+{% endfor %}
+
+{# Default Route #}
+{% if default_route is defined and default_route.gateway is defined %}
+ip route-static 0.0.0.0 0.0.0.0 {{ default_route.gateway }}
+{% endif %}
