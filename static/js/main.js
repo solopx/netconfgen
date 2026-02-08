@@ -35,8 +35,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // VLAN ID validation helper
     window.validateVLAN = function(vlanId) {
-        const vlan = parseInt(vlanId);
-        return !isNaN(vlan) && vlan >= 1 && vlan <= 4094;
+    if (vlanId.toLowerCase() === 'all') return true;
+    
+    // Se contiver hífen (range) ou vírgula (lista)
+    if (vlanId.includes('-') || vlanId.includes(',')) {
+        // Validação simples de regex para permitir números, hífens e vírgulas
+        return /^[\d\s\-,]+$/.test(vlanId);
+    }
+
+    const vlan = parseInt(vlanId);
+    return !isNaN(vlan) && vlan >= 1 && vlan <= 4094;
     };
 
     // Real-time validation for IP address fields

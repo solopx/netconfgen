@@ -202,6 +202,8 @@ def edit_vlan(vlan_id):
         return redirect(url_for("index"))
 
     if request.method == "POST":
+        new_vlan_id = int(request.form.get("vlan_id"))
+        vlan["id"] = new_vlan_id
         vlan_name = request.form.get("vlan_name", "").strip()
         ip_address = request.form.get("ip_address", "").strip()
         prefix_length = request.form.get("prefix_length", "").strip()

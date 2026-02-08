@@ -366,30 +366,11 @@
                 <pre id="configPreviewContent" class="bg-dark text-light p-3 rounded" style="max-height: 500px; overflow-y: auto;"></pre>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="copyToClipboard(document.getElementById('configPreviewContent').innerText)">
+                <i class="fas fa-copy me-1"></i> Copy Configuration</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function previewConfig(platform) {
-    fetch(`/preview_config/${platform}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert('Error: ' + data.error);
-            } else {
-                document.getElementById('configPreviewContent').textContent = data.config;
-                new bootstrap.Modal(document.getElementById('configPreviewModal')).show();
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error loading configuration preview');
-        });
-}
-</script>
 {% endblock %}
