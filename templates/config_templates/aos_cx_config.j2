@@ -15,60 +15,71 @@ ip dns server-address {{ dns_server }}
 {# VLAN Configuration #}
 {% for vlan in vlans %}
 vlan {{ vlan.id }}
-  name {{ vlan.name }}
+    name "{{ vlan.name }}"
 !
 {% if vlan.ip_address and vlan.prefix_length %}
 interface vlan {{ vlan.id }}
-  description {{ vlan.description or vlan.name }}
-  ip address {{ vlan.ip_address }}/{{ vlan.prefix_length }}
-{% if vlan.helper_addresses %}
-{% for helper in vlan.helper_addresses %}
-  ip helper-address {{ helper }}
-{% endfor %}
-{% endif %}
+    description "{{ vlan.description or vlan.name }}"
+    ip address {{ vlan.ip_address }}/{{ vlan.prefix_length }}
+    {% if vlan.helper_addresses %}
+    {% for helper in vlan.helper_addresses %}
+    ip helper-address {{ helper }}
+    {% endfor %}
+    {% endif %}
+    {% if vlan.shutdown %}
+    shutdown
+    {% else %}
+    no shutdown
+    {% endif %}
 !
 {% endif %}
 {% endfor %}
 
-{# Physical Interface Configuration #}
+{# Interface Configuration #}
 {% for interface in interfaces %}
-interface {{ interface.name }}
-{% if interface.description is defined and interface.description %}
-  description {{ interface.description }}
+{% set name = interface.name %}
+{% if '-' in name and '/' in name and name.split('-')[1]|list|length < 5 %}
+    {% set parts = name.split('-') %}
+    {% set prefix = parts[0].rsplit('/', 1)[0] %}
+    interface {{ parts[0] }}-{{ prefix }}/{{ parts[1] }}
+{% else %}
+interface {{ name }}
+{% endif %}
+{% if interface.description %}
+    description "{{ interface.description }}"
 {% endif %}
 {% if interface.is_aos_cx and interface.aos_cx_type == 'routed' %}
-  routing
-{% if interface.ip_address %}
-  ip address {{ interface.ip_address }}/{{ interface.prefix_length or 24 }}
-{% endif %}
+    routing
+    {% if interface.ip_address %}
+    ip address {{ interface.ip_address }}/{{ interface.prefix_length or 24 }}
+    {% endif %}
 {% else %}
-  no routing
-{% if interface.mode == 'access' %}
-  vlan access {{ interface.access_vlan }}
-{% if interface.voice_vlan is defined and interface.voice_vlan %}
-  vlan trunk native {{ interface.access_vlan }}
-  vlan trunk allowed {{ interface.access_vlan }},{{ interface.voice_vlan }}
+    no routing
+    {% if interface.mode == 'access' %}
+    vlan access {{ interface.access_vlan }}
+    {% if interface.voice_vlan %}
+    vlan voice {{ interface.voice_vlan }}
+    {% endif %}
+    {% if interface.portfast %}
+    spanning-tree port-type admin-edge
+    {% endif %}
+    {% if interface.bpduguard %}
+    spanning-tree bpdu-protection
+    {% endif %}
+    {% elif interface.mode == 'trunk' %}
+    vlan trunk native {{ interface.get('native_vlan', 1) }}
+    vlan trunk allowed {{ interface.allowed_vlans or 'all' }}
+    {% endif %}
 {% endif %}
-{% if interface.portfast is defined and interface.portfast %}
-  spanning-tree port-type admin-edge
-{% endif %}
-{% if interface.bpduguard is defined and interface.bpduguard %}
-  spanning-tree bpdu-protection
-{% endif %}
-{% elif interface.mode == 'trunk' %}
-  vlan trunk native 1
-  vlan trunk allowed {{ interface.allowed_vlans }}
-{% endif %}
-{% endif %}
-{% if interface.shutdown is defined and interface.shutdown %}
-  shutdown
+{% if interface.shutdown %}
+    shutdown
 {% else %}
-  no shutdown
+    no shutdown
 {% endif %}
 !
 {% endfor %}
 
 {# Default Route #}
-{% if default_route is defined and default_route.gateway is defined %}
+{% if default_route and default_route.gateway %}
 ip route 0.0.0.0/0 {{ default_route.gateway }}
 {% endif %}
