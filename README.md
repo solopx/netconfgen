@@ -44,12 +44,18 @@ Bridge the gap between planning and deployment with a simple, validated interfac
    ```bash
    pip install -r requirements.txt
    ```
-4. Set your session secret and run:
+4. Set your session secret:
    ```bash
+   for linux/bash:
    export SESSION_SECRET="your-secure-key"
+
+   for windows/cmd:
+   set SESSION_SECRET="your-secure-key"
+5. Run the main python app:
+   ```bash
    python main.py
    ```
-5. Open your web browser and navigate to `http://localhost:5000`
+6. Open your web browser and navigate to `http://localhost:5000`
 
 ## How it Works
 
@@ -77,4 +83,4 @@ Bridge the gap between planning and deployment with a simple, validated interfac
 
 
 ## License
-This project is licensed under the MIT License - feel free to modify and use it for your networking needs.
+This project is licensed under the MIT License - feel free to modify and use it for your needs.
