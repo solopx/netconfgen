@@ -2,13 +2,11 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     
-    // --- 1. Tooltips do Bootstrap ---
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     });
 
-    // --- 2. Auto-fechamento de alertas de sucesso ---
     const alerts = document.querySelectorAll('.alert-success');
     alerts.forEach(function(alert) {
         setTimeout(function() {
@@ -17,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     });
 
-    // --- 3. Validação nativa de formulários do Bootstrap ---
     const forms = document.querySelectorAll('form');
     forms.forEach(function(form) {
         form.addEventListener('submit', function(event) {
@@ -29,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- 4. Helpers de Validação (Escopo Global) ---
     window.validateIP = function(ip) {
         const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         return ipRegex.test(ip);
@@ -38,7 +34,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.validateVLAN = function(vlanId) {
         const val = vlanId.toLowerCase().trim();
         if (val === 'all') return true;
-        // Permite números, hífens para ranges e vírgulas para listas
         if (val.includes('-') || val.includes(',')) {
             return /^[\d\s\-,]+$/.test(val);
         }
@@ -46,7 +41,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return !isNaN(vlan) && vlan >= 1 && vlan <= 4094;
     };
 
-    // --- 5. Validação em Tempo Real (IP e VLAN) ---
     const ipInputs = document.querySelectorAll('input[name="ip_address"], input[name="gateway"]');
     ipInputs.forEach(input => {
         input.addEventListener('blur', function() {
@@ -73,7 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- 6. Confirmação de Exclusão ---
     document.querySelectorAll('a[href*="/delete_"]').forEach(link => {
         link.addEventListener('click', function(event) {
             if (!confirm('Are you sure? This action cannot be undone.')) {
@@ -82,7 +75,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- 7. Lógica de Interface (Access/Trunk/AOS-CX) ---
     const modeSelect = document.getElementById('mode');
     const isAosCxCheckbox = document.getElementById('is_aos_cx');
     
@@ -99,10 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const aosCxType = Array.from(aosCxRadios).find(r => r.checked)?.value || 'non-routed';
             const mode = modeSelect.value;
 
-            // Painel AOS-CX
             if (aosCxOptions) aosCxOptions.style.display = isAosCx ? 'block' : 'none';
             
-            // Campos Roteados vs Switching
             if (isAosCx && aosCxType === 'routed') {
                 if (aosCxRoutedFields) aosCxRoutedFields.style.display = 'block';
                 if (modeContainer) modeContainer.style.display = 'none';
@@ -112,7 +102,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (aosCxRoutedFields) aosCxRoutedFields.style.display = 'none';
                 if (modeContainer) modeContainer.style.display = 'block';
                 
-                // Lógica de Access/Trunk padrão
                 if (accessFields) accessFields.style.display = (mode === 'access') ? 'block' : 'none';
                 if (trunkFields) trunkFields.style.display = (mode === 'trunk') ? 'block' : 'none';
             }
@@ -121,10 +110,9 @@ document.addEventListener('DOMContentLoaded', function() {
         modeSelect.addEventListener('change', toggleModeFields);
         isAosCxCheckbox.addEventListener('change', toggleModeFields);
         aosCxRadios.forEach(r => r.addEventListener('change', toggleModeFields));
-        toggleModeFields(); // Estado inicial
+        toggleModeFields();
     }
 
-    // --- 8. Lógica de SVI (VLAN Interface) ---
     const noIpCheckbox = document.getElementById('no_ip_address');
     if (noIpCheckbox) {
         const ipAddress = document.getElementById('ip_address');
@@ -139,8 +127,6 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleIpFields();
     }
 });
-
-// --- Funções fora do DOMContentLoaded (Gatilhos de Botão) ---
 
 function previewConfig(platform) {
     const modalEl = document.getElementById('configPreviewModal');
@@ -169,7 +155,7 @@ function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(function() {
         const container = document.createElement('div');
         container.className = 'toast-container position-fixed top-0 end-0 p-3';
-        container.style.zIndex = '1060'; // Garante que apareça sobre o modal
+        container.style.zIndex = '1060';
         
         container.innerHTML = `
             <div class="toast show" role="alert">

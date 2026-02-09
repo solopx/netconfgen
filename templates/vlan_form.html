@@ -24,7 +24,7 @@
                         <div class="mb-3">
                             <label for="vlan_id" class="form-label">VLAN ID <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="vlan_id" name="vlan_id" 
-                                   min="1" max="4094" required>
+                                min="1" max="4094" required>
                             <div class="form-text">Enter a VLAN ID between 1 and 4094.</div>
                         </div>
                     {% endif %}
@@ -32,14 +32,14 @@
                     <div class="mb-3">
                         <label for="vlan_name" class="form-label">VLAN Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="vlan_name" name="vlan_name" 
-                               value="{{ vlan.name if edit_mode else '' }}" required>
+                            value="{{ vlan.name if edit_mode else '' }}" required>
                         <div class="form-text">Enter a descriptive name for the VLAN.</div>
                     </div>
 
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
                         <input type="text" class="form-control" id="description" name="description" 
-                               value="{{ vlan.description if edit_mode and vlan.description else '' }}">
+                            value="{{ vlan.description if edit_mode and vlan.description else '' }}">
                         <div class="form-text">Optional description for the VLAN interface.</div>
                     </div>
 
@@ -48,8 +48,8 @@
                             <div class="mb-3">
                                 <label for="ip_address" class="form-label">IP Address</label>
                                 <input type="text" class="form-control" id="ip_address" name="ip_address" 
-                                       value="{{ vlan.ip_address if edit_mode and vlan.ip_address else '' }}"
-                                       placeholder="e.g., 192.168.1.1">
+                                    value="{{ vlan.ip_address if edit_mode and vlan.ip_address else '' }}"
+                                    placeholder="e.g., 192.168.1.1">
                                 <div class="form-text">IP address for the SVI (VLAN interface).</div>
                             </div>
                         </div>
@@ -57,8 +57,8 @@
                             <div class="mb-3">
                                 <label for="prefix_length" class="form-label">Prefix Length</label>
                                 <input type="number" class="form-control" id="prefix_length" name="prefix_length" 
-                                       min="0" max="32" value="{{ vlan.prefix_length if edit_mode and vlan.prefix_length else '' }}"
-                                       placeholder="24">
+                                    min="0" max="32" value="{{ vlan.prefix_length if edit_mode and vlan.prefix_length else '' }}"
+                                    placeholder="24">
                                 <div class="form-text">CIDR prefix (e.g., 24 for /24).</div>
                             </div>
                         </div>
@@ -67,7 +67,7 @@
                     <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="no_ip_address" name="no_ip_address"
-                                   {{ 'checked' if edit_mode and vlan.no_ip_address else '' }}>
+                                {{ 'checked' if edit_mode and vlan.no_ip_address else '' }}>
                             <label class="form-check-label" for="no_ip_address">
                                 No IP Address
                             </label>
@@ -78,15 +78,15 @@
                     <div class="mb-3">
                         <label for="helper_addresses" class="form-label">DHCP Helper Addresses</label>
                         <input type="text" class="form-control" id="helper_addresses" name="helper_addresses" 
-                               value="{{ vlan.helper_addresses|join(', ') if edit_mode and vlan.helper_addresses else '' }}"
-                               placeholder="e.g., 192.168.1.10, 192.168.1.11">
+                            value="{{ vlan.helper_addresses|join(', ') if edit_mode and vlan.helper_addresses else '' }}"
+                            placeholder="e.g., 192.168.1.10, 192.168.1.11">
                         <div class="form-text">Comma-separated list of DHCP server IP addresses.</div>
                     </div>
 
                     <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="shutdown" name="shutdown"
-                                   {{ 'checked' if edit_mode and vlan.shutdown else '' }}>
+                                {{ 'checked' if edit_mode and vlan.shutdown else '' }}>
                             <label class="form-check-label" for="shutdown">
                                 Shutdown Interface
                             </label>

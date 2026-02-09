@@ -29,7 +29,7 @@
                         <div class="mb-3">
                             <label for="interface_name" class="form-label">Interface Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="interface_name" name="interface_name" 
-                                   placeholder="e.g., GigabitEthernet0/1 or Eth1/1" required>
+                                placeholder="e.g., GigabitEthernet0/1 or Eth1/1" required>
                             <div class="form-text">Enter the full interface name (e.g., GigabitEthernet0/1, FastEthernet0/24, Eth1/1).</div>
                         </div>
                     {% endif %}
@@ -37,15 +37,15 @@
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
                         <input type="text" class="form-control" id="description" name="description" 
-                               value="{{ interface.description if edit_mode and interface.description else '' }}"
-                               placeholder="e.g., Connection to Server Room">
+                            value="{{ interface.description if edit_mode and interface.description else '' }}"
+                            placeholder="e.g., Connection to Server Room">
                         <div class="form-text">Optional description for the interface.</div>
                     </div>
 
                     <div class="mb-4">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="is_aos_cx" name="is_aos_cx"
-                                   {{ 'checked' if edit_mode and interface.is_aos_cx else '' }}>
+                                {{ 'checked' if edit_mode and interface.is_aos_cx else '' }}>
                             <label class="form-check-label fw-bold" for="is_aos_cx">
                                 Aruba AOS-CX Configuration
                             </label>
@@ -59,12 +59,12 @@
                             <div class="d-flex gap-3">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="aos_cx_type" id="type_non_routed" value="non-routed" 
-                                           {{ 'checked' if not edit_mode or (interface.aos_cx_type != 'routed') else '' }}>
+                                        {{ 'checked' if not edit_mode or (interface.aos_cx_type != 'routed') else '' }}>
                                     <label class="form-check-label" for="type_non_routed">Non-Routed (Layer 2)</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="aos_cx_type" id="type_routed" value="routed"
-                                           {{ 'checked' if edit_mode and interface.aos_cx_type == 'routed' else '' }}>
+                                        {{ 'checked' if edit_mode and interface.aos_cx_type == 'routed' else '' }}>
                                     <label class="form-check-label" for="type_routed">Routed (Layer 3)</label>
                                 </div>
                             </div>
@@ -76,16 +76,16 @@
                                     <div class="mb-3">
                                         <label for="ip_address" class="form-label">IP Address</label>
                                         <input type="text" class="form-control" id="ip_address" name="ip_address" 
-                                               value="{{ interface.ip_address if edit_mode and interface.ip_address else '' }}"
-                                               placeholder="e.g., 10.0.0.1">
+                                            value="{{ interface.ip_address if edit_mode and interface.ip_address else '' }}"
+                                            placeholder="e.g., 10.0.0.1">
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="prefix_length" class="form-label">Prefix</label>
                                         <input type="number" class="form-control" id="prefix_length" name="prefix_length" 
-                                               value="{{ interface.prefix_length if edit_mode and interface.prefix_length else '' }}"
-                                               placeholder="24" min="0" max="32">
+                                            value="{{ interface.prefix_length if edit_mode and interface.prefix_length else '' }}"
+                                            placeholder="24" min="0" max="32">
                                     </div>
                                 </div>
                             </div>
@@ -144,8 +144,8 @@
                         <div class="mb-3">
                             <label for="allowed_vlans" class="form-label">Allowed VLANs</label>
                             <input type="text" class="form-control" id="allowed_vlans" name="allowed_vlans" 
-                                   value="{{ interface.allowed_vlans if edit_mode and interface.allowed_vlans else '' }}"
-                                   placeholder="e.g., 1,10,20-30,100">
+                                value="{{ interface.allowed_vlans if edit_mode and interface.allowed_vlans else '' }}"
+                                placeholder="e.g., 1,10,20-30,100">
                             <div class="form-text">Comma-separated VLAN list or ranges (e.g., 1,10,20-30,100).</div>
                         </div>
                     </div>
@@ -155,7 +155,7 @@
                         <label class="form-label">Spanning Tree Options</label>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="portfast" name="portfast"
-                                   {{ 'checked' if edit_mode and interface.portfast else '' }}>
+                                {{ 'checked' if edit_mode and interface.portfast else '' }}>
                             <label class="form-check-label" for="portfast">
                                 PortFast / Edge Port
                             </label>
@@ -163,7 +163,7 @@
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="bpduguard" name="bpduguard"
-                                   {{ 'checked' if edit_mode and interface.bpduguard else '' }}>
+                                {{ 'checked' if edit_mode and interface.bpduguard else '' }}>
                             <label class="form-check-label" for="bpduguard">
                                 BPDU Guard
                             </label>
@@ -174,7 +174,7 @@
                     <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="shutdown" name="shutdown"
-                                   {{ 'checked' if edit_mode and interface.shutdown else '' }}>
+                                {{ 'checked' if edit_mode and interface.shutdown else '' }}>
                             <label class="form-check-label" for="shutdown">
                                 Shutdown Interface
                             </label>
