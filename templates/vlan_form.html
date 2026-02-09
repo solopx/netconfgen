@@ -108,28 +108,3 @@
     </div>
 </div>
 {% endblock %}
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const noIpCheckbox = document.getElementById('no_ip_address');
-    const ipAddress = document.getElementById('ip_address');
-    const prefixLength = document.getElementById('prefix_length');
-    
-    function toggleIpFields() {
-        if (noIpCheckbox.checked) {
-            ipAddress.disabled = true;
-            prefixLength.disabled = true;
-            ipAddress.value = '';
-            prefixLength.value = '';
-        } else {
-            ipAddress.disabled = false;
-            prefixLength.disabled = false;
-        }
-    }
-    
-    noIpCheckbox.addEventListener('change', toggleIpFields);
-    toggleIpFields(); // Initial state
-});
-</script>
-{% endblock %}
