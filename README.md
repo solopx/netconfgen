@@ -1,38 +1,58 @@
+
+![Python Badge](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=for-the-badge) ![Flask Badge](https://img.shields.io/badge/Flask-3BABC3?logo=flask&logoColor=fff&style=for-the-badge) ![Jinja Badge](https://img.shields.io/badge/Jinja-7E0C1B?logo=jinja&logoColor=fff&style=for-the-badge)
+
 # Network Configuration Generator
 
-A simple web tool that generates switch configurations for Cisco and HPE/Aruba devices. Enter your VLANs and interfaces through a web form, and get ready-to-use configurations.
+A professional web-based tool for network engineers and administrators to rapidly generate  configuration files for Cisco and HPE/Aruba devices.
 
-## What It Does
+Bridge the gap between planning and deployment with a simple, validated interface.
 
-- **Cisco IOS-XE** - For Catalyst switches
-- **Cisco NX-OS** - For Nexus switches  
-- **HPE/Aruba Comware** - For legacy HPE and Comware switches
-- **Aruba AOS-CX** - For next-gen Aruba switches (supports L2 and L3 interfaces)
-- **VLAN Management** - Add VLANs with IPs and names
-- **Interface Config** - Set up access and trunk ports with range support (e.g., `GigabitEthernet0/1-24`)
-- **Global Management** - Configure NTP, Syslog, DNS, and SNMP community strings
-- **Voice VLANs** - Proper syntax for each platform including AOS-CX trunk-based voice
+## Features
 
-## Quick Start
+### Multi-Platform Support
 
-### Run
-```bash
-git clone https://github.com/solopx/netconfgen.git
-cd netconfgen.git
-pip install -r requirements.txt
-export SESSION_SECRET="any-random-string"
-python main.py
-```
+- **Cisco IOS-XE** - Optimized for Catalyst switching platforms.
+- **Cisco NX-OS** - Tailored for Nexus data center switching.
+- **HPE/Aruba Comware** - Support for legacy HPE and Comware-based switches.
+- **Aruba AOS-CX** - Modern syntax support including advanced L2/L3 port logic.
 
-Then open `http://localhost:5000`
+### Core Capabilities
 
-## How to Use
+- **VLAN Management**: Add, edit, and delete VLANs with optional SVI (IP) configuration.
+- **Interface Flexibility**:
+  - **Access & Trunk Modes**: Standard switching port configurations.
+  - **Port Ranges**: Bulk configure interfaces using standard notation (e.g., `1/1-48`).
+  - **L3 Routing**: Toggle AOS-CX ports between `routing` and `no routing` modes.
+- **Voice VLANs**: Automated platform-specific syntax (e.g., `switchport voice vlan` vs hybrid port modes).
+- **Global Services**: One-click configuration for:
+  - **NTP Servers** for time synchronization.
+  - **Syslog Hosts** for centralized logging.
+  - **DNS Servers** for name resolution.
+  - **SNMP Communities** for monitoring.
 
-1. **Global Settings** - Set your hostname, management servers (NTP, DNS, Syslog), and SNMP community
-2. **Add VLANs** - Set VLAN ID, name, and optional IP address for SVIs
-3. **Configure Interfaces** - Choose access or trunk mode, and use range notation for bulk config
-4. **Generate Config** - Pick your switch type and get the configuration
-5. **Copy & Use** - Copy the config and paste it into your switch
+## Getting Started
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/solopx/netconfgen.git
+   ```
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Set your session secret and run:
+   ```bash
+   export SESSION_SECRET="your-secure-key"
+   python main.py
+   ```
+4. Open your web browser and navigate to `http://localhost:5000`
+
+## How it Works
+
+1. **Initialize Global Configuration**: Set your device hostname and management servers.
+2. **Define VLANs**: Create your Layer 2 broadcast domains and Layer 3 interfaces.
+3. **Map Interfaces**: Assign ports to VLANs or configure high-bandwidth trunks.
+4. **Generate & Export**: Select your target platform and download the CLI-ready configuration.
 
 ## Screenshots
 
@@ -42,14 +62,15 @@ Then open `http://localhost:5000`
 
 ![](./assets/screenshot-03.png)
 
-## Notes
 
-- **AOS-CX Support**: Includes specific `routing` vs `no routing` logic for Layer 3/Layer 2 ports.
-- **Port Ranges**: Supports standard dash notation for configuring multiple ports at once.
-- **Voice VLANs**: Automatically handles platform-specific voice commands (e.g., `switchport voice vlan` on Cisco vs `voice vlan enable` on Comware).
-- Always test configurations in a lab first.
-- The tool stores settings in memory (resets when you restart).
+## Important Notes
+
+- **Safety First**: Always review and validate generated configurations in a lab environment before deploying to production.
+
+- **IP Validation**: Built-in validation ensures IP addresses and netmasks follow standard networking protocols.
+
+- **In-Memory Storage**: For security and simplicity, this version stores data in volatile memory. Configurations are cleared when the server restarts.
+
 
 ## License
-
-MIT License - use it however you want.
+This project is licensed under the MIT License - feel free to modify and use it for your networking needs.

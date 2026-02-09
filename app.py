@@ -20,7 +20,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
 
-# --- Jinja2 Filter for IP prefix to netmask conversion ---
+# Jinja2 Filter for IP prefix to netmask conversion
 def ip_prefix_to_netmask(prefix_length):
     """Converts a CIDR prefix (e.g., 24) to a subnet mask (e.g., 255.255.255.0)."""
     if not isinstance(prefix_length, int) or not (0 <= prefix_length <= 32):
@@ -36,7 +36,7 @@ def ip_prefix_to_netmask(prefix_length):
     return ".".join(map(str, netmask))
 
 
-# Configure Jinja2 environment for config templates
+# Configure Jinja2 environment
 config_env = Environment(
     loader=FileSystemLoader("templates/config_templates", encoding="utf-8"),
     undefined=StrictUndefined,
@@ -46,7 +46,7 @@ config_env = Environment(
 config_env.filters["ip_prefix_to_netmask"] = ip_prefix_to_netmask
 
 
-# --- Validation Functions ---
+# Validation Functions
 def is_valid_ip(ip):
     try:
         ipaddress.ip_address(ip)
@@ -78,41 +78,39 @@ def is_valid_vlan_list(vlan_list_str):
     if not vlan_list_str:
         return True
 
-    # Normaliza a string para facilitar a comparação
     clean_input = vlan_list_str.strip().lower()
 
-    # Suporte para a entrada 'all'
     if clean_input == "all":
         return True
 
     parts = clean_input.split(",")
     for part in parts:
         part = part.strip()
-        if not part: continue # Ignora vírgulas extras (ex: "10,,20")
+        if not part:
+            continue
 
         if "-" in part:
             try:
-                # Trata casos como "-10" ou "10-" que quebrariam o split
                 segments = part.split("-")
                 if len(segments) != 2:
                     return False
-                
+
                 start, end = segments
                 if not (is_valid_vlan_id(start) and is_valid_vlan_id(end)):
                     return False
-                
-                if int(start) >= int(end): # Range invertido ou igual (ex: 40-30)
+
+                if int(start) >= int(end):
                     return False
             except ValueError:
                 return False
         else:
             if not is_valid_vlan_id(part):
                 return False
-                
+
     return True
 
 
-# --- Data Storage (In-memory for simplicity) ---
+# Data Storage (In-memory)
 vlans_data = []
 interfaces_data = []
 config_data = {
@@ -125,7 +123,7 @@ config_data = {
 }
 
 
-# --- Routes ---
+# Routes
 @app.route("/")
 def index():
     return render_template(
@@ -157,8 +155,6 @@ def add_vlan():
             errors.append("Invalid prefix length. Must be between 0-32.")
         if (ip_address and not prefix_length) or (prefix_length and not ip_address):
             errors.append("Both IP address and prefix length are required.")
-
-        # Check for duplicate VLAN ID
         if vlan_id and any(v["id"] == int(vlan_id) for v in vlans_data):
             errors.append("VLAN ID already exists.")
 
@@ -167,7 +163,6 @@ def add_vlan():
                 flash(error, "error")
             return render_template("vlan_form.html")
 
-        # Process helper addresses
         helper_list = []
         if helper_addresses:
             for helper in helper_addresses.split(","):
@@ -212,7 +207,6 @@ def edit_vlan(vlan_id):
         no_ip_address = "no_ip_address" in request.form
         shutdown = "shutdown" in request.form
 
-        # Validation
         errors = []
         if not vlan_name:
             errors.append("VLAN name is required.")
@@ -228,7 +222,6 @@ def edit_vlan(vlan_id):
                 flash(error, "error")
             return render_template("vlan_form.html", vlan=vlan, edit_mode=True)
 
-        # Process helper addresses
         helper_list = []
         if helper_addresses:
             for helper in helper_addresses.split(","):
@@ -236,7 +229,6 @@ def edit_vlan(vlan_id):
                 if helper and is_valid_ip(helper):
                     helper_list.append(helper)
 
-        # Update VLAN data
         vlan.update(
             {
                 "name": vlan_name,
@@ -301,7 +293,6 @@ def add_interface():
         ):
             errors.append("Invalid allowed VLANs format.")
 
-        # Check for duplicate interface name
         if interface_name and any(i["name"] == interface_name for i in interfaces_data):
             errors.append("Interface name already exists.")
 
@@ -310,7 +301,6 @@ def add_interface():
                 flash(error, "error")
             return render_template("interface_form.html", vlans=vlans_data)
 
-        # Create interface data
         interface_data = {
             "name": interface_name,
             "is_aos_cx": is_aos_cx,
@@ -393,7 +383,6 @@ def edit_interface(interface_name):
                 edit_mode=True,
             )
 
-        # Update interface data
         interface.update(
             {
                 "is_aos_cx": is_aos_cx,
@@ -470,7 +459,6 @@ def generate_config(platform):
     try:
         template = config_env.get_template(f"{platform}_config.j2")
 
-        # Prepare data for template
         template_data = {
             "hostname": config_data["hostname"],
             "snmp_community": config_data.get("snmp_community", ""),
@@ -486,7 +474,6 @@ def generate_config(platform):
 
         config_output = template.render(**template_data)
 
-        # Create response with proper headers for file download
         response = make_response(config_output)
         response.headers["Content-Type"] = "text/plain"
         response.headers["Content-Disposition"] = (
@@ -508,7 +495,6 @@ def preview_config(platform):
     try:
         template = config_env.get_template(f"{platform}_config.j2")
 
-        # Prepare data for template
         template_data = {
             "hostname": config_data["hostname"],
             "snmp_community": config_data.get("snmp_community", ""),
@@ -527,7 +513,3 @@ def preview_config(platform):
 
     except Exception as e:
         return jsonify({"error": f"Error generating configuration: {str(e)}"}), 500
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
