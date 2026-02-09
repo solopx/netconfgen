@@ -36,16 +36,20 @@ Bridge the gap between planning and deployment with a simple, validated interfac
    ```bash
    git clone https://github.com/solopx/netconfgen.git
    ```
-2. Install dependencies:
+2. Browse to the directory:
+   ```bash
+   cd netconfgen
+   ```
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-3. Set your session secret and run:
+4. Set your session secret and run:
    ```bash
    export SESSION_SECRET="your-secure-key"
    python main.py
    ```
-4. Open your web browser and navigate to `http://localhost:5000`
+5. Open your web browser and navigate to `http://localhost:5000`
 
 ## How it Works
 
