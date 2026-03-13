@@ -4,7 +4,7 @@
 <div class="row">
     <div class="col-12">
         <h1 class="display-6 mb-4">
-            <i class="fa-solid fa-globe"></i>
+            <i class="fas fa-network-wired me-2"></i>
             Network Configuration Generator
         </h1>
         <p class="lead">Generate device-specific configurations for Cisco and HPE/Aruba switches</p>
@@ -83,6 +83,83 @@
     </div>
 </div>
 
+<!-- Static Routes Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-route me-2"></i>
+                    Static Routes ({{ static_routes|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if static_routes %}
+                <div class="table-responsive mb-3">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Network</th>
+                                <th>Gateway</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in static_routes %}
+                            <tr>
+                                <td><code>{{ route.network }}/{{ route.prefix }}</code></td>
+                                <td>{{ route.gateway }}</td>
+                                <td>{{ route.description or '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_static_route', route_idx=loop.index0) }}"
+                                    class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('duplicate_static_route', route_idx=loop.index0) }}"
+                                    class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-copy"></i>
+                                    </a>
+                                    <a href="{{ url_for('delete_static_route', route_idx=loop.index0) }}"
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Delete this static route?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                <form method="POST" action="{{ url_for('add_static_route') }}" class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Network</label>
+                        <input type="text" class="form-control form-control-sm" name="network" placeholder="e.g., 10.0.0.0" required>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Prefix</label>
+                        <input type="number" class="form-control form-control-sm" name="prefix" placeholder="8" min="0" max="32" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Gateway</label>
+                        <input type="text" class="form-control form-control-sm" name="gateway" placeholder="e.g., 192.168.1.1" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control form-control-sm" name="description" placeholder="Optional">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-light btn-sm w-100">
+                            <i class="fas fa-plus me-1"></i>Add Route
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- VLANs Section -->
 <div class="row mb-4">
     <div class="col-12">
@@ -141,11 +218,15 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('edit_vlan', vlan_id=vlan.id) }}" 
+                                        <a href="{{ url_for('edit_vlan', vlan_id=vlan.id) }}"
                                         class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="{{ url_for('delete_vlan', vlan_id=vlan.id) }}" 
+                                        <a href="{{ url_for('duplicate_vlan', vlan_id=vlan.id) }}"
+                                        class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-copy"></i>
+                                        </a>
+                                        <a href="{{ url_for('delete_vlan', vlan_id=vlan.id) }}"
                                         class="btn btn-sm btn-outline-danger"
                                         onclick="return confirm('Are you sure you want to delete this VLAN?')">
                                             <i class="fas fa-trash"></i>
@@ -230,11 +311,15 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('edit_interface', interface_name=interface.name) }}" 
+                                        <a href="{{ url_for('edit_interface', interface_name=interface.name) }}"
                                         class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="{{ url_for('delete_interface', interface_name=interface.name) }}" 
+                                        <a href="{{ url_for('duplicate_interface', interface_name=interface.name) }}"
+                                        class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-copy"></i>
+                                        </a>
+                                        <a href="{{ url_for('delete_interface', interface_name=interface.name) }}"
                                         class="btn btn-sm btn-outline-danger"
                                         onclick="return confirm('Are you sure you want to delete this interface?')">
                                             <i class="fas fa-trash"></i>
@@ -253,6 +338,89 @@
                             <i class="fas fa-plus me-1"></i>Add Your First Interface
                         </a>
                     </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Port Channels Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-link me-2"></i>
+                    Port Channels / LAG ({{ port_channels|length }})
+                </h5>
+                <a href="{{ url_for('add_port_channel') }}" class="btn btn-light">
+                    <i class="fas fa-plus me-1"></i>Add Port Channel
+                </a>
+            </div>
+            <div class="card-body">
+                {% if port_channels %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Members</th>
+                                <th>LACP Mode</th>
+                                <th>Switchport Mode</th>
+                                <th>VLAN</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pc in port_channels %}
+                            <tr>
+                                <td><span class="badge bg-primary">Po{{ pc.id }}</span></td>
+                                <td><code>{{ pc.member_interfaces | join(', ') }}</code></td>
+                                <td><span class="badge bg-secondary">{{ pc.lacp_mode }}</span></td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if pc.switchport_mode == 'trunk' else 'secondary' }}">
+                                        {{ pc.switchport_mode.title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if pc.switchport_mode == 'access' %}
+                                        {{ pc.access_vlan or '-' }}
+                                    {% else %}
+                                        {{ pc.allowed_vlans or 'all' }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if pc.shutdown %}
+                                        <span class="badge bg-danger">Shutdown</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('edit_port_channel', pc_id=pc.id) }}"
+                                    class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('delete_port_channel', pc_id=pc.id) }}"
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Delete Port-channel {{ pc.id }}?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-link fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No port channels configured yet.</p>
+                    <a href="{{ url_for('add_port_channel') }}" class="btn btn-light">
+                        <i class="fas fa-plus me-1"></i>Add Your First Port Channel
+                    </a>
+                </div>
                 {% endif %}
             </div>
         </div>

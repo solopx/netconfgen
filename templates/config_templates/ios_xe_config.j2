@@ -54,7 +54,9 @@ interface {{ interface.name }}
   switchport voice vlan {{ interface.voice_vlan }}
 {% endif %}
 {% elif interface.mode == 'trunk' %}
+{% if interface.allowed_vlans %}
   switchport trunk allowed vlan {{ interface.allowed_vlans }}
+{% endif %}
 {% endif %}
 {% if interface.portfast is defined and interface.portfast %}
   spanning-tree portfast
@@ -70,7 +72,40 @@ interface {{ interface.name }}
 !
 {% endfor %}
 
+{# Port-Channel Configuration #}
+{% for pc in port_channels %}
+interface Port-channel{{ pc.id }}
+{% if pc.description %}
+  description {{ pc.description }}
+{% endif %}
+  switchport mode {{ pc.switchport_mode }}
+{% if pc.switchport_mode == 'access' and pc.access_vlan %}
+  switchport access vlan {{ pc.access_vlan }}
+{% elif pc.switchport_mode == 'trunk' and pc.allowed_vlans %}
+  switchport trunk allowed vlan {{ pc.allowed_vlans }}
+{% endif %}
+{% if pc.shutdown %}
+  shutdown
+{% else %}
+  no shutdown
+{% endif %}
+!
+{% for member in pc.member_interfaces %}
+interface {{ member }}
+{% if pc.description %}
+  description {{ pc.description }}
+{% endif %}
+  channel-group {{ pc.id }} mode {{ pc.lacp_mode }}
+  no shutdown
+!
+{% endfor %}
+{% endfor %}
+
 {# Default Route #}
 {% if default_route is defined and default_route.gateway is defined %}
 ip route 0.0.0.0 0.0.0.0 {{ default_route.gateway }}
 {% endif %}
+{# Static Routes #}
+{% for route in static_routes %}
+ip route {{ route.network }} {{ route.prefix | ip_prefix_to_netmask }} {{ route.gateway }}
+{% endfor %}

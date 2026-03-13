@@ -1,4 +1,5 @@
-import os
+import copy
+import secrets
 import logging
 import ipaddress
 from flask import (
@@ -13,14 +14,12 @@ from flask import (
 )
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
+app.secret_key = secrets.token_hex(32)
 
 
-# Jinja2 Filter for IP prefix to netmask conversion
 def ip_prefix_to_netmask(prefix_length):
     """Converts a CIDR prefix (e.g., 24) to a subnet mask (e.g., 255.255.255.0)."""
     if not isinstance(prefix_length, int) or not (0 <= prefix_length <= 32):
@@ -36,7 +35,6 @@ def ip_prefix_to_netmask(prefix_length):
     return ".".join(map(str, netmask))
 
 
-# Configure Jinja2 environment
 config_env = Environment(
     loader=FileSystemLoader("templates/config_templates", encoding="utf-8"),
     undefined=StrictUndefined,
@@ -46,7 +44,6 @@ config_env = Environment(
 config_env.filters["ip_prefix_to_netmask"] = ip_prefix_to_netmask
 
 
-# Validation Functions
 def is_valid_ip(ip):
     try:
         ipaddress.ip_address(ip)
@@ -72,9 +69,6 @@ def is_valid_vlan_id(vlan_id):
 
 
 def is_valid_vlan_list(vlan_list_str):
-    """
-    Valida strings de VLAN: '10,20,30-40', 'all', ou ranges amplos.
-    """
     if not vlan_list_str:
         return True
 
@@ -110,9 +104,10 @@ def is_valid_vlan_list(vlan_list_str):
     return True
 
 
-# Data Storage (In-memory)
 vlans_data = []
 interfaces_data = []
+static_routes_data = []
+port_channels_data = []
 config_data = {
     "hostname": "Device-Hostname",
     "snmp_community": "public",
@@ -123,11 +118,15 @@ config_data = {
 }
 
 
-# Routes
 @app.route("/")
 def index():
     return render_template(
-        "index.html", vlans=vlans_data, interfaces=interfaces_data, config=config_data
+        "index.html",
+        vlans=vlans_data,
+        interfaces=interfaces_data,
+        config=config_data,
+        static_routes=static_routes_data,
+        port_channels=port_channels_data,
     )
 
 
@@ -143,7 +142,6 @@ def add_vlan():
         no_ip_address = "no_ip_address" in request.form
         shutdown = "shutdown" in request.form
 
-        # Validation
         errors = []
         if not vlan_id or not is_valid_vlan_id(vlan_id):
             errors.append("Invalid VLAN ID. Must be between 1-4094.")
@@ -170,7 +168,6 @@ def add_vlan():
                 if helper and is_valid_ip(helper):
                     helper_list.append(helper)
 
-        # Create VLAN data
         vlan_data = {
             "id": int(vlan_id),
             "name": vlan_name,
@@ -197,8 +194,7 @@ def edit_vlan(vlan_id):
         return redirect(url_for("index"))
 
     if request.method == "POST":
-        new_vlan_id = int(request.form.get("vlan_id"))
-        vlan["id"] = new_vlan_id
+        raw_vlan_id = request.form.get("vlan_id", "").strip()
         vlan_name = request.form.get("vlan_name", "").strip()
         ip_address = request.form.get("ip_address", "").strip()
         prefix_length = request.form.get("prefix_length", "").strip()
@@ -208,6 +204,10 @@ def edit_vlan(vlan_id):
         shutdown = "shutdown" in request.form
 
         errors = []
+        if not raw_vlan_id or not is_valid_vlan_id(raw_vlan_id):
+            errors.append("Invalid VLAN ID. Must be between 1-4094.")
+        elif int(raw_vlan_id) != vlan_id and any(v["id"] == int(raw_vlan_id) for v in vlans_data):
+            errors.append("VLAN ID already exists.")
         if not vlan_name:
             errors.append("VLAN name is required.")
         if ip_address and not is_valid_ip(ip_address):
@@ -231,6 +231,7 @@ def edit_vlan(vlan_id):
 
         vlan.update(
             {
+                "id": int(raw_vlan_id),
                 "name": vlan_name,
                 "ip_address": ip_address if ip_address else None,
                 "prefix_length": int(prefix_length) if prefix_length else None,
@@ -249,8 +250,7 @@ def edit_vlan(vlan_id):
 
 @app.route("/delete_vlan/<int:vlan_id>")
 def delete_vlan(vlan_id):
-    global vlans_data
-    vlans_data = [v for v in vlans_data if v["id"] != vlan_id]
+    vlans_data[:] = [v for v in vlans_data if v["id"] != vlan_id]
     flash(f"VLAN {vlan_id} deleted successfully!", "success")
     return redirect(url_for("index"))
 
@@ -269,7 +269,6 @@ def add_interface():
         bpduguard = "bpduguard" in request.form
         shutdown = "shutdown" in request.form
 
-        # Validation
         errors = []
         if not interface_name:
             errors.append("Interface name is required.")
@@ -349,7 +348,6 @@ def edit_interface(interface_name):
         bpduguard = "bpduguard" in request.form
         shutdown = "shutdown" in request.form
 
-        # Validation
         errors = []
         if not is_aos_cx:
             if not mode or mode not in ["access", "trunk"]:
@@ -417,9 +415,233 @@ def edit_interface(interface_name):
 
 @app.route("/delete_interface/<path:interface_name>")
 def delete_interface(interface_name):
-    global interfaces_data
-    interfaces_data = [i for i in interfaces_data if i["name"] != interface_name]
+    interfaces_data[:] = [i for i in interfaces_data if i["name"] != interface_name]
     flash(f"Interface {interface_name} deleted successfully!", "success")
+    return redirect(url_for("index"))
+
+
+@app.route("/duplicate_vlan/<int:vlan_id>")
+def duplicate_vlan(vlan_id):
+    vlan = next((v for v in vlans_data if v["id"] == vlan_id), None)
+    if not vlan:
+        flash("VLAN not found.", "error")
+        return redirect(url_for("index"))
+    existing_ids = {v["id"] for v in vlans_data}
+    new_id = vlan_id + 1
+    while new_id in existing_ids and new_id <= 4094:
+        new_id += 1
+    if new_id > 4094:
+        flash("No available VLAN ID to duplicate into.", "error")
+        return redirect(url_for("index"))
+    new_vlan = copy.deepcopy(vlan)
+    new_vlan["id"] = new_id
+    new_vlan["name"] = vlan["name"] + "-copy"
+    vlans_data.append(new_vlan)
+    flash(f"VLAN {vlan_id} duplicated as VLAN {new_id}.", "success")
+    return redirect(url_for("edit_vlan", vlan_id=new_id))
+
+
+@app.route("/duplicate_interface/<path:interface_name>")
+def duplicate_interface(interface_name):
+    interface = next((i for i in interfaces_data if i["name"] == interface_name), None)
+    if not interface:
+        flash("Interface not found.", "error")
+        return redirect(url_for("index"))
+    existing_names = {i["name"] for i in interfaces_data}
+    new_name = interface_name + "-copy"
+    counter = 1
+    while new_name in existing_names:
+        new_name = f"{interface_name}-copy{counter}"
+        counter += 1
+    new_interface = copy.deepcopy(interface)
+    new_interface["name"] = new_name
+    interfaces_data.append(new_interface)
+    flash(f"Interface '{interface_name}' duplicated as '{new_name}'.", "success")
+    return redirect(url_for("edit_interface", interface_name=new_name))
+
+
+@app.route("/add_static_route", methods=["POST"])
+def add_static_route():
+    network = request.form.get("network", "").strip()
+    prefix = request.form.get("prefix", "").strip()
+    gateway = request.form.get("gateway", "").strip()
+    description = request.form.get("description", "").strip()
+    errors = []
+    if not network or not is_valid_ip(network):
+        errors.append("Invalid network address.")
+    if not prefix or not is_valid_prefix(prefix):
+        errors.append("Invalid prefix length.")
+    if not gateway or not is_valid_ip(gateway):
+        errors.append("Invalid gateway address.")
+    if errors:
+        for error in errors:
+            flash(error, "error")
+        return redirect(url_for("index"))
+    static_routes_data.append({
+        "network": network,
+        "prefix": int(prefix),
+        "gateway": gateway,
+        "description": description if description else None,
+    })
+    flash("Static route added.", "success")
+    return redirect(url_for("index"))
+
+
+@app.route("/delete_static_route/<int:route_idx>")
+def delete_static_route(route_idx):
+    if 0 <= route_idx < len(static_routes_data):
+        static_routes_data.pop(route_idx)
+        flash("Static route deleted.", "success")
+    return redirect(url_for("index"))
+
+
+@app.route("/edit_static_route/<int:route_idx>", methods=["GET", "POST"])
+def edit_static_route(route_idx):
+    if route_idx < 0 or route_idx >= len(static_routes_data):
+        flash("Static route not found.", "error")
+        return redirect(url_for("index"))
+    route = static_routes_data[route_idx]
+    if request.method == "POST":
+        network = request.form.get("network", "").strip()
+        prefix = request.form.get("prefix", "").strip()
+        gateway = request.form.get("gateway", "").strip()
+        description = request.form.get("description", "").strip()
+        errors = []
+        if not network or not is_valid_ip(network):
+            errors.append("Invalid network address.")
+        if not prefix or not is_valid_prefix(prefix):
+            errors.append("Invalid prefix length.")
+        if not gateway or not is_valid_ip(gateway):
+            errors.append("Invalid gateway address.")
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            return render_template("static_route_form.html", route=route, route_idx=route_idx, edit_mode=True)
+        static_routes_data[route_idx] = {
+            "network": network,
+            "prefix": int(prefix),
+            "gateway": gateway,
+            "description": description if description else None,
+        }
+        flash("Static route updated.", "success")
+        return redirect(url_for("index"))
+    return render_template("static_route_form.html", route=route, route_idx=route_idx, edit_mode=True)
+
+
+@app.route("/duplicate_static_route/<int:route_idx>")
+def duplicate_static_route(route_idx):
+    if route_idx < 0 or route_idx >= len(static_routes_data):
+        flash("Static route not found.", "error")
+        return redirect(url_for("index"))
+    new_route = copy.deepcopy(static_routes_data[route_idx])
+    static_routes_data.append(new_route)
+    new_idx = len(static_routes_data) - 1
+    flash("Static route duplicated.", "success")
+    return redirect(url_for("edit_static_route", route_idx=new_idx))
+
+
+@app.route("/add_port_channel", methods=["GET", "POST"])
+def add_port_channel():
+    if request.method == "POST":
+        pc_id_raw = request.form.get("pc_id", "").strip()
+        description = request.form.get("description", "").strip()
+        lacp_mode = request.form.get("lacp_mode", "active").strip()
+        member_interfaces_raw = request.form.get("member_interfaces", "").strip()
+        switchport_mode = request.form.get("switchport_mode", "").strip()
+        access_vlan = request.form.get("access_vlan", "").strip()
+        allowed_vlans = request.form.get("allowed_vlans", "").strip()
+        shutdown = "shutdown" in request.form
+        errors = []
+        pc_id = None
+        if not pc_id_raw:
+            errors.append("Port-channel ID is required.")
+        else:
+            try:
+                pc_id = int(pc_id_raw)
+                if not (1 <= pc_id <= 999):
+                    errors.append("Port-channel ID must be between 1 and 999.")
+            except ValueError:
+                errors.append("Invalid Port-channel ID.")
+        if pc_id and any(p["id"] == pc_id for p in port_channels_data):
+            errors.append("Port-channel ID already exists.")
+        if not member_interfaces_raw:
+            errors.append("At least one member interface is required.")
+        if not switchport_mode or switchport_mode not in ["access", "trunk"]:
+            errors.append("Mode must be 'access' or 'trunk'.")
+        if lacp_mode not in ["active", "passive", "on"]:
+            errors.append("Invalid LACP mode.")
+        if switchport_mode == "access" and access_vlan and not is_valid_vlan_id(access_vlan):
+            errors.append("Invalid access VLAN ID.")
+        if switchport_mode == "trunk" and allowed_vlans and not is_valid_vlan_list(allowed_vlans):
+            errors.append("Invalid allowed VLANs format.")
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            return render_template("port_channel_form.html", vlans=vlans_data)
+        members = [m.strip() for m in member_interfaces_raw.split(",") if m.strip()]
+        port_channels_data.append({
+            "id": pc_id,
+            "description": description if description else None,
+            "lacp_mode": lacp_mode,
+            "member_interfaces": members,
+            "switchport_mode": switchport_mode,
+            "access_vlan": int(access_vlan) if access_vlan else None,
+            "allowed_vlans": allowed_vlans if allowed_vlans else None,
+            "shutdown": shutdown,
+        })
+        flash(f"Port-channel {pc_id} added successfully!", "success")
+        return redirect(url_for("index"))
+    return render_template("port_channel_form.html", vlans=vlans_data)
+
+
+@app.route("/edit_port_channel/<int:pc_id>", methods=["GET", "POST"])
+def edit_port_channel(pc_id):
+    pc = next((p for p in port_channels_data if p["id"] == pc_id), None)
+    if not pc:
+        flash("Port-channel not found.", "error")
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        description = request.form.get("description", "").strip()
+        lacp_mode = request.form.get("lacp_mode", "active").strip()
+        member_interfaces_raw = request.form.get("member_interfaces", "").strip()
+        switchport_mode = request.form.get("switchport_mode", "").strip()
+        access_vlan = request.form.get("access_vlan", "").strip()
+        allowed_vlans = request.form.get("allowed_vlans", "").strip()
+        shutdown = "shutdown" in request.form
+        errors = []
+        if not member_interfaces_raw:
+            errors.append("At least one member interface is required.")
+        if not switchport_mode or switchport_mode not in ["access", "trunk"]:
+            errors.append("Mode must be 'access' or 'trunk'.")
+        if lacp_mode not in ["active", "passive", "on"]:
+            errors.append("Invalid LACP mode.")
+        if switchport_mode == "access" and access_vlan and not is_valid_vlan_id(access_vlan):
+            errors.append("Invalid access VLAN ID.")
+        if switchport_mode == "trunk" and allowed_vlans and not is_valid_vlan_list(allowed_vlans):
+            errors.append("Invalid allowed VLANs format.")
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            return render_template("port_channel_form.html", pc=pc, vlans=vlans_data, edit_mode=True)
+        members = [m.strip() for m in member_interfaces_raw.split(",") if m.strip()]
+        pc.update({
+            "description": description if description else None,
+            "lacp_mode": lacp_mode,
+            "member_interfaces": members,
+            "switchport_mode": switchport_mode,
+            "access_vlan": int(access_vlan) if access_vlan else None,
+            "allowed_vlans": allowed_vlans if allowed_vlans else None,
+            "shutdown": shutdown,
+        })
+        flash(f"Port-channel {pc_id} updated successfully!", "success")
+        return redirect(url_for("index"))
+    return render_template("port_channel_form.html", pc=pc, vlans=vlans_data, edit_mode=True)
+
+
+@app.route("/delete_port_channel/<int:pc_id>")
+def delete_port_channel(pc_id):
+    port_channels_data[:] = [p for p in port_channels_data if p["id"] != pc_id]
+    flash(f"Port-channel {pc_id} deleted.", "success")
     return redirect(url_for("index"))
 
 
@@ -467,6 +689,8 @@ def generate_config(platform):
             "dns_server": config_data.get("dns_server", ""),
             "vlans": vlans_data,
             "interfaces": interfaces_data,
+            "static_routes": static_routes_data,
+            "port_channels": port_channels_data,
             "default_route": config_data["default_route"]
             if config_data["default_route"]["gateway"]
             else None,
@@ -503,6 +727,8 @@ def preview_config(platform):
             "dns_server": config_data.get("dns_server", ""),
             "vlans": vlans_data,
             "interfaces": interfaces_data,
+            "static_routes": static_routes_data,
+            "port_channels": port_channels_data,
             "default_route": config_data["default_route"]
             if config_data["default_route"]["gateway"]
             else None,

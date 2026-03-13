@@ -39,9 +39,9 @@ interface vlan {{ vlan.id }}
 {% for interface in interfaces %}
 {% set name = interface.name %}
 {% if '-' in name and '/' in name and name.split('-')[1]|list|length < 5 %}
-    {% set parts = name.split('-') %}
-    {% set prefix = parts[0].rsplit('/', 1)[0] %}
-    interface {{ parts[0] }}-{{ prefix }}/{{ parts[1] }}
+{% set parts = name.split('-') %}
+{% set prefix = parts[0].rsplit('/', 1)[0] %}
+interface {{ parts[0] }}-{{ prefix }}/{{ parts[1] }}
 {% else %}
 interface {{ name }}
 {% endif %}
@@ -79,7 +79,45 @@ interface {{ name }}
 !
 {% endfor %}
 
+{# LAG Configuration #}
+{% for pc in port_channels %}
+interface lag {{ pc.id }}
+{% if pc.description %}
+    description "{{ pc.description }}"
+{% endif %}
+    no routing
+{% if pc.lacp_mode != 'on' %}
+    lacp mode {{ pc.lacp_mode }}
+{% endif %}
+{% if pc.switchport_mode == 'access' and pc.access_vlan %}
+    vlan access {{ pc.access_vlan }}
+{% elif pc.switchport_mode == 'trunk' %}
+    vlan trunk native 1
+    vlan trunk allowed {{ pc.allowed_vlans or 'all' }}
+{% endif %}
+{% if pc.shutdown %}
+    shutdown
+{% else %}
+    no shutdown
+{% endif %}
+!
+{% for member in pc.member_interfaces %}
+interface {{ member }}
+{% if pc.description %}
+    description "{{ pc.description }}"
+{% endif %}
+    no routing
+    lag {{ pc.id }}
+    no shutdown
+!
+{% endfor %}
+{% endfor %}
+
 {# Default Route #}
 {% if default_route and default_route.gateway %}
 ip route 0.0.0.0/0 {{ default_route.gateway }}
 {% endif %}
+{# Static Routes #}
+{% for route in static_routes %}
+ip route {{ route.network }}/{{ route.prefix }} {{ route.gateway }}
+{% endfor %}

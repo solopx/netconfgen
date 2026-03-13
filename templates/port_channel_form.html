@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit Port Channel" if edit_mode else "Add Port Channel" }} - Network Configuration Generator{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-link me-2"></i>
+                    {{ "Edit Port Channel" if edit_mode else "Add Port Channel" }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% if not edit_mode %}
+                    <div class="mb-3">
+                        <label for="pc_id" class="form-label">Port-Channel ID <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="pc_id" name="pc_id"
+                            placeholder="e.g., 1" min="1" max="999" required>
+                        <div class="form-text">Used as Po1 (IOS-XE/NX-OS), Bridge-Aggregation 1 (HPE), lag 1 (AOS-CX).</div>
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label">Port-Channel ID</label>
+                        <input type="text" class="form-control" value="Po{{ pc.id }}" disabled>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="description" name="description"
+                            value="{{ pc.description if edit_mode and pc.description else '' }}"
+                            placeholder="e.g., Uplink to Core Switch">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="member_interfaces" class="form-label">Member Interfaces <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="member_interfaces" name="member_interfaces"
+                            value="{{ pc.member_interfaces | join(', ') if edit_mode else '' }}"
+                            placeholder="e.g., GigabitEthernet0/1, GigabitEthernet0/2" required>
+                        <div class="form-text">Comma-separated list of physical interfaces to bundle.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="lacp_mode" class="form-label">LACP Mode <span class="text-danger">*</span></label>
+                        <select class="form-select" id="lacp_mode" name="lacp_mode">
+                            <option value="active" {{ 'selected' if edit_mode and pc.lacp_mode == 'active' else '' }}>Active (initiates LACP negotiation)</option>
+                            <option value="passive" {{ 'selected' if edit_mode and pc.lacp_mode == 'passive' else '' }}>Passive (responds to LACP)</option>
+                            <option value="on" {{ 'selected' if edit_mode and pc.lacp_mode == 'on' else '' }}>On (static, no LACP)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="switchport_mode" class="form-label">Switchport Mode <span class="text-danger">*</span></label>
+                        <select class="form-select" id="pc_switchport_mode" name="switchport_mode" onchange="togglePcVlanFields()">
+                            <option value="">Select mode...</option>
+                            <option value="access" {{ 'selected' if edit_mode and pc.switchport_mode == 'access' else '' }}>Access</option>
+                            <option value="trunk" {{ 'selected' if edit_mode and pc.switchport_mode == 'trunk' else '' }}>Trunk</option>
+                        </select>
+                    </div>
+
+                    <div id="pc_access_fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="pc_access_vlan" class="form-label">Access VLAN</label>
+                            <select class="form-select" id="pc_access_vlan" name="access_vlan">
+                                <option value="">Select VLAN...</option>
+                                {% for vlan in vlans %}
+                                <option value="{{ vlan.id }}"
+                                        {{ 'selected' if edit_mode and pc.access_vlan == vlan.id else '' }}>
+                                    VLAN {{ vlan.id }} - {{ vlan.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="pc_trunk_fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="pc_allowed_vlans" class="form-label">Allowed VLANs</label>
+                            <input type="text" class="form-control" id="pc_allowed_vlans" name="allowed_vlans"
+                                value="{{ pc.allowed_vlans if edit_mode and pc.allowed_vlans else '' }}"
+                                placeholder="e.g., 1,10,20-30,100">
+                            <div class="form-text">Comma-separated VLAN list or ranges.</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="shutdown" name="shutdown"
+                                {{ 'checked' if edit_mode and pc.shutdown else '' }}>
+                            <label class="form-check-label" for="shutdown">Shutdown Port Channel</label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>{{ "Update Port Channel" if edit_mode else "Add Port Channel" }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePcVlanFields() {
+    const mode = document.getElementById('pc_switchport_mode').value;
+    document.getElementById('pc_access_fields').style.display = mode === 'access' ? 'block' : 'none';
+    document.getElementById('pc_trunk_fields').style.display = mode === 'trunk' ? 'block' : 'none';
+}
+document.addEventListener('DOMContentLoaded', function () {
+    togglePcVlanFields();
+});
+</script>
+{% endblock %}

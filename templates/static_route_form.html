@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Static Route - Network Configuration Generator{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-route me-2"></i>
+                    Edit Static Route
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="network" class="form-label">Network <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="network" name="network"
+                            value="{{ route.network }}" placeholder="e.g., 10.0.0.0" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="prefix" class="form-label">Prefix Length <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="prefix" name="prefix"
+                            value="{{ route.prefix }}" min="0" max="32" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="gateway" class="form-label">Gateway <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="gateway" name="gateway"
+                            value="{{ route.gateway }}" placeholder="e.g., 192.168.1.1" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="description" name="description"
+                            value="{{ route.description or '' }}" placeholder="Optional">
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Update Route
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

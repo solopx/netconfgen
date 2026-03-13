@@ -3,9 +3,7 @@
 
 # Network Configuration Generator
 
-A professional web-based tool for network engineers and administrators to rapidly generate  configuration files for Cisco and HPE/Aruba devices.
-
-Bridge the gap between planning and deployment with a simple, validated interface.
+A web-based tool for network engineers and administrators to rapidly generate configuration files for Cisco and HPE/Aruba devices.
 
 ## Features
 
@@ -18,17 +16,25 @@ Bridge the gap between planning and deployment with a simple, validated interfac
 
 ### Core Capabilities
 
-- **VLAN Management**: Add, edit, and delete VLANs with optional SVI (IP) configuration.
+- **VLAN Management**: Add, edit, delete, and duplicate VLANs with optional SVI (IP) configuration.
 - **Interface Flexibility**:
   - **Access & Trunk Modes**: Standard switching port configurations.
   - **Port Ranges**: Bulk configure interfaces using standard notation (e.g., `1/1-48`).
   - **L3 Routing**: Toggle AOS-CX ports between `routing` and `no routing` modes.
+  - **Duplicate**: Clone any interface with one click to speed up repetitive configurations.
 - **Voice VLANs**: Automated platform-specific syntax (e.g., `switchport voice vlan` vs hybrid port modes).
+- **Port-Channel / LAG**: Configure link aggregation groups with LACP (active/passive) or static mode.
+  - IOS-XE: `Port-channel` + `channel-group mode`
+  - NX-OS: `port-channel` + `channel-group mode`
+  - HPE/Aruba: `Bridge-Aggregation` + `port link-aggregation group`
+  - AOS-CX: `lag` + member interface binding
+- **Static Routes**: Add multiple static routes (network/prefix/gateway) beyond the default route.
 - **Global Services**: One-click configuration for:
   - **NTP Servers** for time synchronization.
   - **Syslog Hosts** for centralized logging.
   - **DNS Servers** for name resolution.
   - **SNMP Communities** for monitoring.
+  - **Default Gateway** for management routing.
 
 ## Getting Started
 
@@ -44,25 +50,20 @@ Bridge the gap between planning and deployment with a simple, validated interfac
    ```bash
    pip install -r requirements.txt
    ```
-4. Set your session secret:
-   ```bash
-   for linux/bash:
-   export SESSION_SECRET="your-secure-key"
-
-   for windows/cmd:
-   set SESSION_SECRET="your-secure-key"
-5. Run the main python app:
+4. Run the main python app:
    ```bash
    python main.py
    ```
-6. Open your web browser and navigate to `http://localhost:5000`
+5. Open your web browser and navigate to `http://localhost:5000`
 
 ## How it Works
 
-1. **Initialize Global Configuration**: Set your device hostname and management servers.
-2. **Define VLANs**: Create your Layer 2 broadcast domains and Layer 3 interfaces.
-3. **Map Interfaces**: Assign ports to VLANs or configure high-bandwidth trunks.
-4. **Generate & Export**: Select your target platform and download the CLI-ready configuration.
+1. **Global Configuration**: Set your device hostname, management servers, and default gateway.
+2. **Static Routes**: Add additional static routes beyond the default route.
+3. **VLANs**: Create your Layer 2 broadcast domains and Layer 3 interfaces.
+4. **Port Channels**: Define LAG/EtherChannel groups and their member interfaces.
+5. **Map Interfaces**: Assign ports to VLANs or configure high-bandwidth trunks.
+6. **Generate & Export**: Select your target platform and download the CLI-ready configuration.
 
 ## Screenshots
 
@@ -77,10 +78,7 @@ Bridge the gap between planning and deployment with a simple, validated interfac
 
 - **Safety First**: Always review and validate generated configurations in a lab environment before deploying to production.
 
-- **IP Validation**: Built-in validation ensures IP addresses and netmasks follow standard networking protocols.
-
 - **In-Memory Storage**: For security and simplicity, this version stores data in volatile memory. Configurations are cleared when the server restarts.
-
 
 ## License
 This project is licensed under the MIT License - feel free to modify and use it for your needs.

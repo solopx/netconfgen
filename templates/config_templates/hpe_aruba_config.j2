@@ -19,11 +19,19 @@ vlan {{ vlan.id }}
 !
 {% if vlan.ip_address and vlan.prefix_length %}
 interface Vlan-interface{{ vlan.id }}
+{% if vlan.description %}
+  description {{ vlan.description }}
+{% endif %}
   ip address {{ vlan.ip_address }} {{ vlan.prefix_length | ip_prefix_to_netmask }}
 {% if vlan.helper_addresses %}
 {% for helper in vlan.helper_addresses %}
   ip helper-address {{ helper }}
 {% endfor %}
+{% endif %}
+{% if vlan.shutdown %}
+  shutdown
+{% else %}
+  undo shutdown
 {% endif %}
 !
 {% endif %}
@@ -68,7 +76,46 @@ interface {{ interface.name }}
 !
 {% endfor %}
 
+{# Port-Channel (Link Aggregation) Configuration #}
+{% for pc in port_channels %}
+interface Bridge-Aggregation {{ pc.id }}
+{% if pc.description %}
+  description {{ pc.description }}
+{% endif %}
+  port link-mode bridge
+{% if pc.switchport_mode == 'access' and pc.access_vlan %}
+  port access vlan {{ pc.access_vlan }}
+{% elif pc.switchport_mode == 'trunk' and pc.allowed_vlans %}
+  port link-type trunk
+  port trunk permit vlan {{ pc.allowed_vlans }}
+{% endif %}
+{% if pc.lacp_mode == 'on' %}
+  link-aggregation mode static
+{% else %}
+  lacp mode {{ pc.lacp_mode }}
+{% endif %}
+{% if pc.shutdown %}
+  shutdown
+{% else %}
+  undo shutdown
+{% endif %}
+!
+{% for member in pc.member_interfaces %}
+interface {{ member }}
+{% if pc.description %}
+  description {{ pc.description }}
+{% endif %}
+  port link-aggregation group {{ pc.id }}
+  undo shutdown
+!
+{% endfor %}
+{% endfor %}
+
 {# Default Route #}
 {% if default_route is defined and default_route.gateway is defined %}
 ip route-static 0.0.0.0 0.0.0.0 {{ default_route.gateway }}
 {% endif %}
+{# Static Routes #}
+{% for route in static_routes %}
+ip route-static {{ route.network }} {{ route.prefix | ip_prefix_to_netmask }} {{ route.gateway }}
+{% endfor %}
