@@ -5,7 +5,7 @@
 
 [Read this in english](README.en.md)
 
-O NetConfGen é um facilitador para quem trabalha configurando dispositivos via CLI.
+NetConfGen é uma ferramenta projetada para simplificar o trabalho de qualquer pessoa que configure dispositivos via linha de comando.
 
 Seja você analista de redes, de testes ou estudante que está sempre lidando com equipamentos de diversas marcas, esse é o jeito mais rápido de configurar seus dispositivos sem erros de digitação e sem complicação.
 
@@ -22,11 +22,11 @@ Assim, você foca no projeto e o app cuida de gerar o código certinho para cada
 
 ## Funcionalidades
 
-- **Configurações de VLANs**: Adicione, edite, exclua e duplique VLANs de dados  voz.
+- **Configurações de VLANs**: Adicione, edite, exclua e duplique VLANs de dados e voz.
 - **Gerenciamento de interfaces**
   - **Modos Access e Trunk** Configuração de interfaces de acesso ou trunk
   - **Intervalos de Porta** Configure intervalos de portas usando notação padrão (por exemplo, `1/1-48`, `Giga0/1-24)`).
-  - **Roteamento L3** Para AOS-CX, alterna a configuração das portas  entre os modos `routing` e `no routing`.
+  - **Roteamento L3** Para AOS-CX, alterna a configuração das portas entre os modos `routing` e `no routing`.
 - **Port-Channel / LAG**: Configure agregação de links com LACP (ativo/passivo) ou modo estático.
   - IOS-XE: `Port-channel` + `channel-group mode`
   - NX-OS: `port-channel` + `channel-group mode`
