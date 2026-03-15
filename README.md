@@ -5,7 +5,7 @@
 
 [Read this in english](README.en.md)
 
-NetConfGen é uma ferramenta projetada para simplificar o trabalho de qualquer pessoa que configure dispositivos via linha de comando.
+NetConfGen é uma ferramenta projetada para simplificar o trabalho de qualquer pessoa que configure dispositivos de rede via linha de comando.
 
 Seja você analista de redes, de testes ou estudante que está sempre lidando com equipamentos de diversas marcas, esse é o jeito mais rápido de configurar seus dispositivos sem erros de digitação e sem complicação.
 

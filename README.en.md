@@ -3,7 +3,7 @@
 
 # Network Configuration Generator
 
-NetConfGen is a tool designed to simplify the work of anyone configuring devices via CLI.
+NetConfGen is a tool designed to simplify the work of anyone configuring network devices via CLI.
 
 Whether you are a network engineer, a test analyst, or a student working with different vendors, this is the fastest way to configure your devices without typos or headaches.
 
