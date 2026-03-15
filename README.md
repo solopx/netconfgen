@@ -9,7 +9,7 @@ O NetConfGen é um facilitador para quem trabalha configurando dispositivos via 
 
 Seja você analista de redes, de testes ou estudante que está sempre lidando com equipamentos de diversas marcas, esse é o jeito mais rápido de configurar seus dispositivos sem erros de digitação e sem complicação.
 
-Em vez de perder tempo decorando comandos de cada marca, você apenas insere na interface os dados da configuração desejada e o aplicativo transforma tudo em arquivos de configuração prontos para uso.
+Em vez de consultar manuais de sintaxe para cada fabricante, você apenas insere na interface os dados da configuração desejada e o aplicativo transforma tudo em arquivos de configuração prontos para uso.
 
 Assim, você foca no projeto e o app cuida de gerar o código certinho para cada aparelho.
 

@@ -7,7 +7,7 @@ NetConfGen is a tool designed to simplify the work of anyone configuring devices
 
 Whether you are a network engineer, a test analyst, or a student working with different vendors, this is the fastest way to configure your devices without typos or headaches.
 
-Instead of wasting time memorizing commands for every brand, you simply enter the desired settings into the interface, and the app transforms them into ready-to-use configuration files.
+Instead of constantly checking syntax manuals for every vendor, you simply enter the desired settings into the interface, and the app transforms them into ready-to-use configuration files.
 
 This way, you can focus on the project while the app takes care of generating the correct code for each device.
 
