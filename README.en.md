@@ -22,7 +22,7 @@ This way, you can focus on the project while the app takes care of generating th
 
 ### Core Capabilities
 
-- **VLAN Management**: Add, edit, delete, and duplicate VLANs with optional SVI (IP) configuration.
+- **VLAN Management**: Add, edit, delete, and duplicate VLANs.
 - **Interface Flexibility**:
   - **Access & Trunk Modes**: Standard switching port configurations.
   - **Port Ranges**: Bulk configure interfaces using standard notation (e.g., `1/1-48`).

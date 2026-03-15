@@ -27,7 +27,6 @@ Assim, você foca no projeto e o app cuida de gerar o código certinho para cada
   - **Modos Access e Trunk**
   - **Intervalos de Porta**
   - **Roteamento L3**
-  - **Duplicar**
 - **VLANs de Voz**
 - **Port-Channel / LAG**: Configure grupos de agregação de links com LACP (ativo/passivo) ou modo estático.
   - IOS-XE: `Port-channel` + `channel-group mode`
