@@ -22,24 +22,36 @@ Assim, você foca no projeto e o app cuida de gerar o código certinho para cada
 
 ## Funcionalidades
 
-- **Gerenciamento de VLANs**
-- **Flexibilidade de Interfaces**
-  - **Modos Access e Trunk**
-  - **Intervalos de Porta**
-  - **Roteamento L3**
-- **VLANs de Voz**
-- **Port-Channel / LAG**: Configure grupos de agregação de links com LACP (ativo/passivo) ou modo estático.
+- **Configurações de VLANs**: Adicione, edite, exclua e duplique VLANs de dados  voz.
+- **Gerenciamento de interfaces**
+  - **Modos Access e Trunk** Configuração de interfaces de acesso ou trunk
+  - **Intervalos de Porta** Configure intervalos de portas usando notação padrão (por exemplo, `1/1-48`, `Giga0/1-24)`).
+  - **Roteamento L3** Para AOS-CX, alterna a configuração das portas  entre os modos `routing` e `no routing`.
+- **Port-Channel / LAG**: Configure agregação de links com LACP (ativo/passivo) ou modo estático.
   - IOS-XE: `Port-channel` + `channel-group mode`
   - NX-OS: `port-channel` + `channel-group mode`
   - HPE/Aruba: `Bridge-Aggregation` + `port link-aggregation group`
   - AOS-CX: `lag` + vínculo de interfaces membro
-- **Rotas Estáticas**
+- **Rotas Estáticas** Adicione várias rotas estáticas (rede/prefixo/gateway) além da rota padrão.
 - **Serviços Globais**
   - **Servidores NTP**
   - **Hosts Syslog**
   - **Servidores DNS**
   - **Comunidades SNMP**
   - **Gateway Padrão**
+
+## Screenshots
+<details>
+<summary> Clique aqui para ver os Screenshots </summary>
+<br>
+
+![](./assets/screenshot-01.png)
+
+![](./assets/screenshot-02.png)
+
+![](./assets/screenshot-03.png)
+
+</details>
 
 ## Como Começar
 
@@ -72,14 +84,6 @@ Assim, você foca no projeto e o app cuida de gerar o código certinho para cada
 4. **Mapeamento de Interfaces**: Associe portas a VLANs ou configure trunks.
 5. **Port Channels**: Defina grupos LAG/EtherChannel e suas interfaces.
 6. **Gerar e Exportar**: Selecione a plataforma de destino e baixe a configuração pronta para o CLI.
-
-## Screenshots
-
-![](./assets/screenshot-01.png)
-
-![](./assets/screenshot-02.png)
-
-![](./assets/screenshot-03.png)
 
 ## Notas Importantes
 

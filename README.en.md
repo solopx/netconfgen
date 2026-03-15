@@ -22,10 +22,10 @@ This way, you can focus on the project while the app takes care of generating th
 
 ### Core Capabilities
 
-- **VLAN Management**: Add, edit, delete, and duplicate VLANs.
-- **Interface Flexibility**:
+- **VLAN Management**: Add, edit, delete, and duplicate VLANs data and voice VLANs.
+- **Interface Management**:
   - **Access & Trunk Modes**: Standard switching port configurations.
-  - **Port Ranges**: Bulk configure interfaces using standard notation (e.g., `1/1-48`).
+  - **Port Ranges**: Bulk configure interfaces using standard notation (e.g., `1/1-48`, `Giga0/1-24)`).
   - **L3 Routing**: Toggle AOS-CX ports between `routing` and `no routing` modes.
   - **Duplicate**: Clone any interface with one click to speed up repetitive configurations.
 - **Voice VLANs**: Automated platform-specific syntax (e.g., `switchport voice vlan` vs hybrid port modes).
@@ -35,12 +35,26 @@ This way, you can focus on the project while the app takes care of generating th
   - HPE/Aruba: `Bridge-Aggregation` + `port link-aggregation group`
   - AOS-CX: `lag` + member interface binding
 - **Static Routes**: Add multiple static routes (network/prefix/gateway) beyond the default route.
-- **Global Services**: One-click configuration for:
+- **Global Services**
   - **NTP Servers** for time synchronization.
   - **Syslog Hosts** for centralized logging.
   - **DNS Servers** for name resolution.
   - **SNMP Communities** for monitoring.
   - **Default Gateway** for management routing.
+
+## Screenshots
+
+<details>
+<summary> Clique here to see the screenshots </summary>
+<br>
+
+![](./assets/screenshot-01.png)
+
+![](./assets/screenshot-02.png)
+
+![](./assets/screenshot-03.png)
+
+</details>
 
 ## Getting Started
 
@@ -73,15 +87,6 @@ This way, you can focus on the project while the app takes care of generating th
 4. **Port Channels**: Define LAG/EtherChannel groups and their member interfaces.
 5. **Map Interfaces**: Assign ports to VLANs or configure high-bandwidth trunks.
 6. **Generate & Export**: Select your target platform and download the CLI-ready configuration.
-
-## Screenshots
-
-![](./assets/screenshot-01.png)
-
-![](./assets/screenshot-02.png)
-
-![](./assets/screenshot-03.png)
-
 
 ## Important Notes
 
