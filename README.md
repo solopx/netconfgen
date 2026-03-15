@@ -1,69 +1,78 @@
 
 ![Python Badge](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=for-the-badge) ![Flask Badge](https://img.shields.io/badge/Flask-3BABC3?logo=flask&logoColor=fff&style=for-the-badge) ![Jinja Badge](https://img.shields.io/badge/Jinja-7E0C1B?logo=jinja&logoColor=fff&style=for-the-badge)
 
-# Network Configuration Generator
+# NetConfGen
 
-A web-based tool for network engineers and administrators to rapidly generate configuration files for Cisco and HPE/Aruba devices.
+[Read this in english](README.en.md)
 
-## Features
+O NetConfGen é um facilitador para quem trabalha configurando dispositivos via CLI.
 
-### Multi-Platform Support
+Seja você analista de redes, de testes ou estudante que está sempre lidando com equipamentos de diversas marcas, esse é o jeito mais rápido de configurar seus dispositivos sem erros de digitação e sem complicação.
 
-- **Cisco IOS-XE** - Optimized for Catalyst switching platforms.
-- **Cisco NX-OS** - Tailored for Nexus data center switching.
-- **HPE/Aruba Comware** - Support for legacy HPE and Comware-based switches.
-- **Aruba AOS-CX** - Modern syntax support including advanced L2/L3 port logic.
+Em vez de perder tempo decorando comandos de cada marca, você apenas insere na interface os dados da configuração desejada e o aplicativo transforma tudo em arquivos de configuração prontos para uso.
 
-### Core Capabilities
+Assim, você foca no projeto e o app cuida de gerar o código certinho para cada aparelho.
 
-- **VLAN Management**: Add, edit, delete, and duplicate VLANs with optional SVI (IP) configuration.
-- **Interface Flexibility**:
-  - **Access & Trunk Modes**: Standard switching port configurations.
-  - **Port Ranges**: Bulk configure interfaces using standard notation (e.g., `1/1-48`).
-  - **L3 Routing**: Toggle AOS-CX ports between `routing` and `no routing` modes.
-  - **Duplicate**: Clone any interface with one click to speed up repetitive configurations.
-- **Voice VLANs**: Automated platform-specific syntax (e.g., `switchport voice vlan` vs hybrid port modes).
-- **Port-Channel / LAG**: Configure link aggregation groups with LACP (active/passive) or static mode.
+## Plataformas Suportadas
+
+- **Cisco IOS-XE**
+- **Cisco NX-OS**
+- **HPE/Aruba Comware**
+- **Aruba AOS-CX**
+
+## Funcionalidades
+
+- **Gerenciamento de VLANs**
+- **Flexibilidade de Interfaces**
+  - **Modos Access e Trunk**
+  - **Intervalos de Porta**
+  - **Roteamento L3**
+  - **Duplicar**
+- **VLANs de Voz**
+- **Port-Channel / LAG**: Configure grupos de agregação de links com LACP (ativo/passivo) ou modo estático.
   - IOS-XE: `Port-channel` + `channel-group mode`
   - NX-OS: `port-channel` + `channel-group mode`
   - HPE/Aruba: `Bridge-Aggregation` + `port link-aggregation group`
-  - AOS-CX: `lag` + member interface binding
-- **Static Routes**: Add multiple static routes (network/prefix/gateway) beyond the default route.
-- **Global Services**: One-click configuration for:
-  - **NTP Servers** for time synchronization.
-  - **Syslog Hosts** for centralized logging.
-  - **DNS Servers** for name resolution.
-  - **SNMP Communities** for monitoring.
-  - **Default Gateway** for management routing.
+  - AOS-CX: `lag` + vínculo de interfaces membro
+- **Rotas Estáticas**
+- **Serviços Globais**
+  - **Servidores NTP**
+  - **Hosts Syslog**
+  - **Servidores DNS**
+  - **Comunidades SNMP**
+  - **Gateway Padrão**
 
-## Getting Started
+## Como Começar
 
-1. Clone the repository:
+1. Clone o repositório:
    ```bash
    git clone https://github.com/solopx/netconfgen.git
    ```
-2. Browse to the directory:
+2. Acesse o diretório:
    ```bash
    cd netconfgen
    ```
-3. Install dependencies:
+3. Instale as dependências:
    ```bash
    pip install -r requirements.txt
    ```
-4. Run the main python app:
+4. Execute a aplicação:
    ```bash
    python main.py
    ```
-5. Open your web browser and navigate to `http://localhost:5000`
+5. Abra o navegador e acesse:
+   ```bash
+   http://localhost:5000
+   ```
 
-## How it Works
+## Como Funciona
 
-1. **Global Configuration**: Set your device hostname, management servers, and default gateway.
-2. **Static Routes**: Add additional static routes beyond the default route.
-3. **VLANs**: Create your Layer 2 broadcast domains and Layer 3 interfaces.
-4. **Port Channels**: Define LAG/EtherChannel groups and their member interfaces.
-5. **Map Interfaces**: Assign ports to VLANs or configure high-bandwidth trunks.
-6. **Generate & Export**: Select your target platform and download the CLI-ready configuration.
+1. **Configuração Global**: Defina o hostname do dispositivo, servidores de gerência e gateway padrão.
+2. **Rotas Estáticas**: Adicione rotas estáticas adicionais além da rota padrão.
+3. **VLANs**: Criação e edição de VLANs
+4. **Mapeamento de Interfaces**: Associe portas a VLANs ou configure trunks.
+5. **Port Channels**: Defina grupos LAG/EtherChannel e suas interfaces.
+6. **Gerar e Exportar**: Selecione a plataforma de destino e baixe a configuração pronta para o CLI.
 
 ## Screenshots
 
@@ -73,12 +82,11 @@ A web-based tool for network engineers and administrators to rapidly generate co
 
 ![](./assets/screenshot-03.png)
 
+## Notas Importantes
 
-## Important Notes
+- **Segurança em Primeiro Lugar**: Sempre revise e valide as configurações geradas em ambiente de laboratório antes de aplicar em produção.
 
-- **Safety First**: Always review and validate generated configurations in a lab environment before deploying to production.
+- **Armazenamento em Memória**: Por segurança e simplicidade, esta versão armazena os dados em memória volátil. As configurações são apagadas quando o servidor é reiniciado.
 
-- **In-Memory Storage**: For security and simplicity, this version stores data in volatile memory. Configurations are cleared when the server restarts.
-
-## License
-This project is licensed under the MIT License - feel free to modify and use it for your needs.
+## Licença
+Este projeto está licenciado sob a MIT License — sinta-se à vontade para modificar e usar conforme sua necessidade.
