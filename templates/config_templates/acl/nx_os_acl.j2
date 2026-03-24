@@ -1,0 +1,20 @@
+{% for acl in acls %}
+ip access-list {{ acl.name }}
+{% if acl.description %}
+  remark {{ acl.description }}
+{% endif %}
+{% for entry in acl.entries %}
+{% if entry.remark %}
+  remark {{ entry.remark }}
+{% endif %}
+{% set seq = (entry.sequence|string + ' ') if entry.sequence else '' %}
+{% set src = 'any' if entry.source_type=='any' else ('host '+entry.source if entry.source_type=='host' else entry.source+'/'+entry.source_prefix|string) %}
+{% if acl.type == 'standard' %}
+  {{ seq }}{{ entry.action }} ip {{ src }} any
+{% else %}
+{% set dst = 'any' if entry.dest_type=='any' else ('host '+entry.dest if entry.dest_type=='host' else entry.dest+'/'+entry.dest_prefix|string) %}
+  {{ seq }}{{ entry.action }} {{ entry.protocol }} {{ src }} {{ dst }}
+{% endif %}
+{% endfor %}
+!
+{% endfor %}

@@ -16,9 +16,9 @@
                 <form method="POST">
                     {% if edit_mode %}
                         <div class="mb-3">
-                            <label class="form-label">VLAN ID</label>
-                            <input type="text" class="form-control" name="vlan_id" value="{{ vlan.id }}">
-                            <div class="form-text">Update the VLAN if necessary.</div>
+                            <label class="form-label">VLAN ID <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="vlan_id" value="{{ vlan.id }}" min="1" max="4094" required>
+                            <div class="form-text">Enter a VLAN ID between 1 and 4094.</div>
                         </div>
                     {% else %}
                         <div class="mb-3">

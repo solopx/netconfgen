@@ -34,6 +34,11 @@ This way, you can focus on the project while the app takes care of generating th
   - NX-OS: `port-channel` + `channel-group mode`
   - HPE/Aruba: `Bridge-Aggregation` + `port link-aggregation group`
   - AOS-CX: `lag` + member interface binding
+- **Access Control Lists (ACLs)**: Create, edit, duplicate, and delete Standard and Extended ACLs.
+  - Full support for all 4 models with platform-correct syntax
+  - ACEs (entries) with: optional sequence number, action, protocol, source/destination (any/host/network), and remark
+  - Interface application (HPE Comware): `Apply to Interface` field with inbound/outbound direction
+  - Validations: no spaces in names, consistent sequence numbering (all or none), no duplicate entries
 - **Static Routes**: Add multiple static routes (network/prefix/gateway) beyond the default route.
 - **Global Services**
   - **NTP Servers** for time synchronization.
@@ -86,7 +91,8 @@ This way, you can focus on the project while the app takes care of generating th
 3. **VLANs**: Create your Layer 2 broadcast domains and Layer 3 interfaces.
 4. **Port Channels**: Define LAG/EtherChannel groups and their member interfaces.
 5. **Map Interfaces**: Assign ports to VLANs or configure high-bandwidth trunks.
-6. **Generate & Export**: Select your target platform and download the CLI-ready configuration.
+6. **ACLs**: Build Standard or Extended access control lists with multiple entries.
+7. **Generate & Export**: Select your target platform and download the CLI-ready configuration.
 
 ## Important Notes
 

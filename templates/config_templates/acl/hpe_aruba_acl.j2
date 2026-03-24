@@ -1,0 +1,35 @@
+{% for acl in acls %}
+{% if acl.type == 'standard' %}
+acl basic {{ acl.name }}
+{% else %}
+acl advanced {{ acl.name }}
+{% endif %}
+{% if acl.description %}
+ description {{ acl.description }}
+{% endif %}
+{% for entry in acl.entries %}
+{% if entry.remark %}
+ remark {{ entry.remark }}
+{% endif %}
+{% set rid = entry.sequence if entry.sequence else '' %}
+{% if acl.type == 'standard' %}
+{% if entry.source_type == 'any' %}
+ rule{% if rid %} {{ rid }}{% endif %} {{ entry.action }} source any
+{% elif entry.source_type == 'host' %}
+ rule{% if rid %} {{ rid }}{% endif %} {{ entry.action }} source {{ entry.source }} 0
+{% else %}
+ rule{% if rid %} {{ rid }}{% endif %} {{ entry.action }} source {{ entry.source }} {{ entry.source_prefix | ip_prefix_to_wildcard }}
+{% endif %}
+{% else %}
+{% set src = 'source any' if entry.source_type=='any' else ('source '+entry.source+' 0' if entry.source_type=='host' else 'source '+entry.source+' '+(entry.source_prefix|ip_prefix_to_wildcard)) %}
+{% set dst = 'destination any' if entry.dest_type=='any' else ('destination '+entry.dest+' 0' if entry.dest_type=='host' else 'destination '+entry.dest+' '+(entry.dest_prefix|ip_prefix_to_wildcard)) %}
+ rule{% if rid %} {{ rid }}{% endif %} {{ entry.action }} {{ entry.protocol }} {{ src }} {{ dst }}
+{% endif %}
+{% endfor %}
+{% if acl.apply_interface %}
+interface {{ acl.apply_interface }}
+ packet-filter {{ acl.name }} {{ acl.apply_direction or 'inbound' }}
+!
+{% endif %}
+!
+{% endfor %}

@@ -1,0 +1,26 @@
+{% for acl in acls %}
+ip access-list {{ acl.type }} {{ acl.name }}
+{% if acl.description %}
+ remark {{ acl.description }}
+{% endif %}
+{% for entry in acl.entries %}
+{% if entry.remark %}
+ remark {{ entry.remark }}
+{% endif %}
+{% set seq = (entry.sequence|string + ' ') if entry.sequence else '' %}
+{% if acl.type == 'standard' %}
+{% if entry.source_type == 'any' %}
+ {{ seq }}{{ entry.action }} any
+{% elif entry.source_type == 'host' %}
+ {{ seq }}{{ entry.action }} host {{ entry.source }}
+{% else %}
+ {{ seq }}{{ entry.action }} {{ entry.source }} {{ entry.source_prefix | ip_prefix_to_wildcard }}
+{% endif %}
+{% else %}
+{% set src = 'any' if entry.source_type=='any' else ('host '+entry.source if entry.source_type=='host' else entry.source+' '+(entry.source_prefix|ip_prefix_to_wildcard)) %}
+{% set dst = 'any' if entry.dest_type=='any' else ('host '+entry.dest if entry.dest_type=='host' else entry.dest+' '+(entry.dest_prefix|ip_prefix_to_wildcard)) %}
+ {{ seq }}{{ entry.action }} {{ entry.protocol }} {{ src }} {{ dst }}
+{% endif %}
+{% endfor %}
+!
+{% endfor %}

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit ACL" if edit_mode else "Add ACL" }} - Network Configuration Generator{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-11">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    {{ "Edit ACL" if edit_mode else "Add ACL" }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="acl-form">
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="acl_name" class="form-label">Name / Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="acl_name" name="name"
+                                value="{{ acl.name if edit_mode else '' }}"
+                                placeholder="e.g., BLOCK_INTERNET or 2001" required>
+                            <div class="form-text">HPE Comware: use number (basic 2000-2999, advanced 3000-3999).</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="acl_type" class="form-label">Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="acl_type" name="type" onchange="toggleAclType()">
+                                <option value="standard" {{ 'selected' if edit_mode and acl.type == 'standard' else '' }}>Standard</option>
+                                <option value="extended" {{ 'selected' if edit_mode and acl.type == 'extended' else '' }}>Extended</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="acl_description" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="acl_description" name="description"
+                                value="{{ acl.description if edit_mode and acl.description else '' }}"
+                                placeholder="e.g., Block internet access">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3" id="hpe_apply_fields">
+                        <div class="col-md-5">
+                            <label for="apply_interface" class="form-label">Apply to Interface <small class="text-muted">(HPE Comware only)</small></label>
+                            <input type="text" class="form-control" id="apply_interface" name="apply_interface"
+                                value="{{ acl.apply_interface if edit_mode and acl.apply_interface else '' }}"
+                                placeholder="e.g., GigabitEthernet1/0/1">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="apply_direction" class="form-label">Direction</label>
+                            <select class="form-select" id="apply_direction" name="apply_direction">
+                                <option value="inbound" {{ 'selected' if edit_mode and acl.apply_direction == 'inbound' else '' }}>Inbound</option>
+                                <option value="outbound" {{ 'selected' if edit_mode and acl.apply_direction == 'outbound' else '' }}>Outbound</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6 class="mb-3">ACL Entries <span class="text-danger">*</span></h6>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle" id="entries-table">
+                            <thead class="table-secondary">
+                                <tr>
+                                    <th style="width:70px">Seq</th>
+                                    <th style="width:90px">Action</th>
+                                    <th class="acl-extended-col" style="width:90px">Protocol</th>
+                                    <th style="width:100px">Src Type</th>
+                                    <th>Source IP</th>
+                                    <th style="width:60px">Prefix</th>
+                                    <th class="acl-extended-col" style="width:100px">Dst Type</th>
+                                    <th class="acl-extended-col">Dest IP</th>
+                                    <th class="acl-extended-col" style="width:60px">Prefix</th>
+                                    <th>Remark</th>
+                                    <th style="width:50px"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="entries-body">
+                                {% if acl is defined and acl.entries %}
+                                {% for entry in acl.entries %}
+                                {% set i = loop.index0 %}
+                                <tr>
+                                    <td><input type="number" class="form-control form-control-sm" name="entry_sequence_{{ i }}" value="{{ entry.sequence if entry.sequence else '' }}" placeholder="auto" min="1"></td>
+                                    <td>
+                                        <select class="form-select form-select-sm" name="entry_action_{{ i }}" required>
+                                            <option value="permit" {{ 'selected' if entry.action == 'permit' }}>permit</option>
+                                            <option value="deny" {{ 'selected' if entry.action == 'deny' }}>deny</option>
+                                        </select>
+                                    </td>
+                                    <td class="acl-extended-col">
+                                        <select class="form-select form-select-sm" name="entry_protocol_{{ i }}">
+                                            <option value="ip" {{ 'selected' if entry.protocol == 'ip' }}>ip</option>
+                                            <option value="tcp" {{ 'selected' if entry.protocol == 'tcp' }}>tcp</option>
+                                            <option value="udp" {{ 'selected' if entry.protocol == 'udp' }}>udp</option>
+                                            <option value="icmp" {{ 'selected' if entry.protocol == 'icmp' }}>icmp</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm src-type-sel" name="entry_source_type_{{ i }}" onchange="toggleSrcFields(this)">
+                                            <option value="any" {{ 'selected' if entry.source_type == 'any' }}>any</option>
+                                            <option value="host" {{ 'selected' if entry.source_type == 'host' }}>host</option>
+                                            <option value="network" {{ 'selected' if entry.source_type == 'network' }}>network</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" class="form-control form-control-sm src-ip" name="entry_source_{{ i }}" value="{{ entry.source if entry.source else '' }}" placeholder="IP address" {{ 'disabled' if entry.source_type == 'any' }}></td>
+                                    <td><input type="number" class="form-control form-control-sm src-prefix" name="entry_source_prefix_{{ i }}" value="{{ entry.source_prefix if entry.source_prefix is not none else '' }}" placeholder="/" min="0" max="32" {{ 'disabled' if entry.source_type != 'network' }}></td>
+                                    <td class="acl-extended-col">
+                                        <select class="form-select form-select-sm dst-type-sel" name="entry_dest_type_{{ i }}" onchange="toggleDstFields(this)">
+                                            <option value="any" {{ 'selected' if entry.dest_type == 'any' }}>any</option>
+                                            <option value="host" {{ 'selected' if entry.dest_type == 'host' }}>host</option>
+                                            <option value="network" {{ 'selected' if entry.dest_type == 'network' }}>network</option>
+                                        </select>
+                                    </td>
+                                    <td class="acl-extended-col"><input type="text" class="form-control form-control-sm dst-ip" name="entry_dest_{{ i }}" value="{{ entry.dest if entry.dest else '' }}" placeholder="IP address" {{ 'disabled' if entry.dest_type == 'any' }}></td>
+                                    <td class="acl-extended-col"><input type="number" class="form-control form-control-sm dst-prefix" name="entry_dest_prefix_{{ i }}" value="{{ entry.dest_prefix if entry.dest_prefix is not none else '' }}" placeholder="/" min="0" max="32" {{ 'disabled' if entry.dest_type != 'network' }}></td>
+                                    <td><input type="text" class="form-control form-control-sm" name="entry_remark_{{ i }}" value="{{ entry.remark if entry.remark else '' }}" placeholder="optional"></td>
+                                    <td><button type="button" class="btn btn-sm btn-danger" onclick="removeAclEntry(this)"><i class="fas fa-times"></i></button></td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-outline-secondary mb-3" onclick="addAclEntry()">
+                        <i class="fas fa-plus me-1"></i>Add Entry
+                    </button>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>{{ "Update ACL" if edit_mode else "Add ACL" }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="entry-row-template">
+    <tr>
+        <td><input type="number" class="form-control form-control-sm" name="entry_sequence___IDX__" placeholder="auto" min="1"></td>
+        <td>
+            <select class="form-select form-select-sm" name="entry_action___IDX__" required>
+                <option value="permit">permit</option>
+                <option value="deny">deny</option>
+            </select>
+        </td>
+        <td class="acl-extended-col">
+            <select class="form-select form-select-sm" name="entry_protocol___IDX__">
+                <option value="ip">ip</option>
+                <option value="tcp">tcp</option>
+                <option value="udp">udp</option>
+                <option value="icmp">icmp</option>
+            </select>
+        </td>
+        <td>
+            <select class="form-select form-select-sm src-type-sel" name="entry_source_type___IDX__" onchange="toggleSrcFields(this)">
+                <option value="any">any</option>
+                <option value="host">host</option>
+                <option value="network">network</option>
+            </select>
+        </td>
+        <td><input type="text" class="form-control form-control-sm src-ip" name="entry_source___IDX__" placeholder="IP address" disabled></td>
+        <td><input type="number" class="form-control form-control-sm src-prefix" name="entry_source_prefix___IDX__" placeholder="/" min="0" max="32" disabled></td>
+        <td class="acl-extended-col">
+            <select class="form-select form-select-sm dst-type-sel" name="entry_dest_type___IDX__" onchange="toggleDstFields(this)">
+                <option value="any">any</option>
+                <option value="host">host</option>
+                <option value="network">network</option>
+            </select>
+        </td>
+        <td class="acl-extended-col"><input type="text" class="form-control form-control-sm dst-ip" name="entry_dest___IDX__" placeholder="IP address" disabled></td>
+        <td class="acl-extended-col"><input type="number" class="form-control form-control-sm dst-prefix" name="entry_dest_prefix___IDX__" placeholder="/" min="0" max="32" disabled></td>
+        <td><input type="text" class="form-control form-control-sm" name="entry_remark___IDX__" placeholder="optional"></td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="removeAclEntry(this)"><i class="fas fa-times"></i></button></td>
+    </tr>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    toggleAclType();
+    if (document.getElementById('entries-body').querySelectorAll('tr').length === 0) {
+        addAclEntry();
+    }
+});
+</script>
+{% endblock %}

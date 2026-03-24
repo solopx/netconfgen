@@ -40,6 +40,11 @@
                             <i class="fas fa-plus me-1"></i>Add Port Channel
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('add_acl') }}">
+                            <i class="fas fa-plus me-1"></i>Add ACL
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -49,7 +54,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-{{ 'danger' if category == 'error' else ('warning' if category == 'warning' else 'success') }} alert-dismissible fade show" role="alert">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>

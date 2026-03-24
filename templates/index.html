@@ -23,60 +23,48 @@
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('update_config') }}">
-                    <div class="row">
+                    <div class="row g-3">
                         <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="hostname" class="form-label">Hostname</label>
-                                <input type="text" class="form-control" id="hostname" name="hostname" 
-                                    value="{{ config.hostname }}" required>
-                            </div>
+                            <label for="hostname" class="form-label">Hostname</label>
+                            <input type="text" class="form-control" id="hostname" name="hostname"
+                                value="{{ config.hostname }}" required>
                         </div>
                         <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="snmp_community" class="form-label">SNMP Community</label>
-                                <input type="text" class="form-control" id="snmp_community" name="snmp_community" 
-                                    value="{{ config.snmp_community or '' }}" 
-                                    placeholder="e.g., public">
-                            </div>
+                            <label for="snmp_community" class="form-label">SNMP Community</label>
+                            <input type="text" class="form-control" id="snmp_community" name="snmp_community"
+                                value="{{ config.snmp_community or '' }}"
+                                placeholder="e.g., public">
                         </div>
                         <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="gateway" class="form-label">Default Gateway</label>
-                                <input type="text" class="form-control" id="gateway" name="gateway" 
-                                    value="{{ config.default_route.gateway or '' }}" 
-                                    placeholder="e.g., 192.168.1.1">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="ntp_server" class="form-label">NTP Server</label>
-                                <input type="text" class="form-control" id="ntp_server" name="ntp_server" 
-                                    value="{{ config.ntp_server or '' }}" 
-                                    placeholder="e.g., pool.ntp.org">
-                            </div>
+                            <label for="gateway" class="form-label">Default Gateway</label>
+                            <input type="text" class="form-control" id="gateway" name="gateway"
+                                value="{{ config.default_route.gateway or '' }}"
+                                placeholder="e.g., 192.168.1.1">
                         </div>
                         <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="syslog_server" class="form-label">Syslog Server</label>
-                                <input type="text" class="form-control" id="syslog_server" name="syslog_server" 
-                                    value="{{ config.syslog_server or '' }}" 
-                                    placeholder="e.g., 10.0.0.50">
-                            </div>
+                            <label for="ntp_server" class="form-label">NTP Server</label>
+                            <input type="text" class="form-control" id="ntp_server" name="ntp_server"
+                                value="{{ config.ntp_server or '' }}"
+                                placeholder="e.g., pool.ntp.org">
                         </div>
                         <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="dns_server" class="form-label">DNS Server</label>
-                                <input type="text" class="form-control" id="dns_server" name="dns_server" 
-                                    value="{{ config.dns_server or '' }}" 
-                                    placeholder="e.g., 8.8.8.8">
-                            </div>
+                            <label for="syslog_server" class="form-label">Syslog Server</label>
+                            <input type="text" class="form-control" id="syslog_server" name="syslog_server"
+                                value="{{ config.syslog_server or '' }}"
+                                placeholder="e.g., 10.0.0.50">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="dns_server" class="form-label">DNS Server</label>
+                            <input type="text" class="form-control" id="dns_server" name="dns_server"
+                                value="{{ config.dns_server or '' }}"
+                                placeholder="e.g., 8.8.8.8">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="fas fa-save me-1"></i>Update Configuration
+                            </button>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-secondary mt-3">
-                        <i class="fas fa-save me-1"></i>Update Configuration
-                    </button>
                 </form>
             </div>
         </div>
@@ -87,21 +75,23 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-route me-2"></i>
                     Static Routes ({{ static_routes|length }})
                 </h5>
+                <a href="{{ url_for('add_static_route') }}" class="btn btn-sm btn-light">
+                    <i class="fas fa-plus me-1"></i>Add Static Route
+                </a>
             </div>
             <div class="card-body">
                 {% if static_routes %}
-                <div class="table-responsive mb-3">
+                <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
                             <tr>
                                 <th>Network</th>
                                 <th>Gateway</th>
-                                <th>Description</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -110,7 +100,6 @@
                             <tr>
                                 <td><code>{{ route.network }}/{{ route.prefix }}</code></td>
                                 <td>{{ route.gateway }}</td>
-                                <td>{{ route.description or '-' }}</td>
                                 <td>
                                     <a href="{{ url_for('edit_static_route', route_idx=loop.index0) }}"
                                     class="btn btn-sm btn-outline-primary">
@@ -131,30 +120,15 @@
                         </tbody>
                     </table>
                 </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-route fa-2x mb-2 text-muted"></i>
+                    <p class="text-muted">No static routes configured yet.</p>
+                    <a href="{{ url_for('add_static_route') }}" class="btn btn-light">
+                        <i class="fas fa-plus me-1"></i>Add Static Route
+                    </a>
+                </div>
                 {% endif %}
-                <form method="POST" action="{{ url_for('add_static_route') }}" class="row g-2 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label">Network</label>
-                        <input type="text" class="form-control form-control-sm" name="network" placeholder="e.g., 10.0.0.0" required>
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label">Prefix</label>
-                        <input type="number" class="form-control form-control-sm" name="prefix" placeholder="8" min="0" max="32" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Gateway</label>
-                        <input type="text" class="form-control form-control-sm" name="gateway" placeholder="e.g., 192.168.1.1" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Description</label>
-                        <input type="text" class="form-control form-control-sm" name="description" placeholder="Optional">
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-light btn-sm w-100">
-                            <i class="fas fa-plus me-1"></i>Add Route
-                        </button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
@@ -169,7 +143,7 @@
                     <i class="fa-solid fa-list"></i>
                     VLANs ({{ vlans|length }})
                 </h5>
-                <a href="{{ url_for('add_vlan') }}" class="btn btn-light">
+                <a href="{{ url_for('add_vlan') }}" class="btn btn-sm btn-light">
                     <i class="fas fa-plus me-1"></i>Add VLAN
                 </a>
             </div>
@@ -242,7 +216,7 @@
                         <i class="fa-solid fa-list-ol fa-3x text-muted mb-3"></i>
                         <p class="text-muted">No VLANs configured yet.</p>
                         <a href="{{ url_for('add_vlan') }}" class="btn btn-light">
-                            <i class="fas fa-plus me-1"></i>Add Your First VLAN
+                            <i class="fas fa-plus me-1"></i>Add VLAN
                         </a>
                     </div>
                 {% endif %}
@@ -260,7 +234,7 @@
                     <i class="fas fa-ethernet me-2"></i>
                     Interfaces ({{ interfaces|length }})
                 </h5>
-                <a href="{{ url_for('add_interface') }}" class="btn btn-light">
+                <a href="{{ url_for('add_interface') }}" class="btn btn-sm btn-light">
                     <i class="fas fa-plus me-1"></i>Add Interface
                 </a>
             </div>
@@ -335,7 +309,7 @@
                         <i class="fa-solid fa-plug fa-3x text-muted mb-3"></i>
                         <p class="text-muted">No interfaces configured yet.</p>
                         <a href="{{ url_for('add_interface') }}" class="btn btn-light">
-                            <i class="fas fa-plus me-1"></i>Add Your First Interface
+                            <i class="fas fa-plus me-1"></i>Add Interface
                         </a>
                     </div>
                 {% endif %}
@@ -353,7 +327,7 @@
                     <i class="fas fa-link me-2"></i>
                     Port Channels / LAG ({{ port_channels|length }})
                 </h5>
-                <a href="{{ url_for('add_port_channel') }}" class="btn btn-light">
+                <a href="{{ url_for('add_port_channel') }}" class="btn btn-sm btn-light">
                     <i class="fas fa-plus me-1"></i>Add Port Channel
                 </a>
             </div>
@@ -418,7 +392,78 @@
                     <i class="fas fa-link fa-3x text-muted mb-3"></i>
                     <p class="text-muted">No port channels configured yet.</p>
                     <a href="{{ url_for('add_port_channel') }}" class="btn btn-light">
-                        <i class="fas fa-plus me-1"></i>Add Your First Port Channel
+                        <i class="fas fa-plus me-1"></i>Add Port Channel
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACLs Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    ACLs ({{ acls|length }})
+                </h5>
+                <a href="{{ url_for('add_acl') }}" class="btn btn-sm btn-light">
+                    <i class="fas fa-plus me-1"></i>Add ACL
+                </a>
+            </div>
+            <div class="card-body">
+                {% if acls %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Entries</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for acl in acls %}
+                            <tr>
+                                <td><code>{{ acl.name }}</code></td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if acl.type == 'extended' else 'secondary' }}">
+                                        {{ acl.type.title() }}
+                                    </span>
+                                </td>
+                                <td><span class="badge bg-dark">{{ acl.entries|length }}</span></td>
+                                <td>{{ acl.description or '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_acl', idx=loop.index0) }}"
+                                    class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('duplicate_acl', idx=loop.index0) }}"
+                                    class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-copy"></i>
+                                    </a>
+                                    <a href="{{ url_for('delete_acl', idx=loop.index0) }}"
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Delete ACL {{ acl.name }}?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No ACLs configured yet.</p>
+                    <a href="{{ url_for('add_acl') }}" class="btn btn-light">
+                        <i class="fas fa-plus me-1"></i>Add ACL
                     </a>
                 </div>
                 {% endif %}

@@ -32,6 +32,11 @@ Assim, você foca no projeto e o app cuida de gerar o código certinho para cada
   - NX-OS: `port-channel` + `channel-group mode`
   - HPE/Aruba: `Bridge-Aggregation` + `port link-aggregation group`
   - AOS-CX: `lag` + vínculo de interfaces membro
+- **Listas de Controle de Acesso (ACLs)**: Crie, edite, duplique e exclua ACLs Standard e Extended.
+  - Suporte completo aos 4 modelos com sintaxe correta por plataforma
+  - Entradas (ACEs) com: sequence opcional, action, protocolo, source/destination (any/host/network) e remark
+  - Aplicação de ACL em interface (HPE Comware): campo `Apply to Interface` + direção inbound/outbound
+  - Validações: nomes sem espaços, sequence consistente (todas ou nenhuma), sem entradas duplicadas
 - **Rotas Estáticas** Adicione várias rotas estáticas (rede/prefixo/gateway) além da rota padrão.
 - **Serviços Globais**
   - **Servidores NTP**
@@ -83,7 +88,8 @@ Assim, você foca no projeto e o app cuida de gerar o código certinho para cada
 3. **VLANs**: Criação e edição de VLANs
 4. **Mapeamento de Interfaces**: Associe portas a VLANs ou configure trunks.
 5. **Port Channels**: Defina grupos LAG/EtherChannel e suas interfaces.
-6. **Gerar e Exportar**: Selecione a plataforma de destino e baixe a configuração pronta para o CLI.
+6. **ACLs**: Crie listas de controle de acesso Standard ou Extended com múltiplas entradas.
+7. **Gerar e Exportar**: Selecione a plataforma de destino e baixe a configuração pronta para o CLI.
 
 ## Notas Importantes
 

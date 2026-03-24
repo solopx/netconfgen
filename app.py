@@ -35,6 +35,11 @@ def ip_prefix_to_netmask(prefix_length):
     return ".".join(map(str, netmask))
 
 
+def ip_prefix_to_wildcard(prefix):
+    mask_int = (0xFFFFFFFF >> int(prefix)) & 0xFFFFFFFF
+    return str(ipaddress.IPv4Address(mask_int))
+
+
 config_env = Environment(
     loader=FileSystemLoader("templates/config_templates", encoding="utf-8"),
     undefined=StrictUndefined,
@@ -42,6 +47,7 @@ config_env = Environment(
     trim_blocks=True,
 )
 config_env.filters["ip_prefix_to_netmask"] = ip_prefix_to_netmask
+config_env.filters["ip_prefix_to_wildcard"] = ip_prefix_to_wildcard
 
 
 def is_valid_ip(ip):
@@ -50,6 +56,33 @@ def is_valid_ip(ip):
         return True
     except ValueError:
         return False
+
+
+def is_valid_hostname(h):
+    if is_valid_ip(h):
+        return True
+    if not h or len(h) > 253:
+        return False
+    allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-")
+    return all(
+        label
+        and len(label) <= 63
+        and not label.startswith("-")
+        and not label.endswith("-")
+        and all(c in allowed for c in label)
+        for label in h.split(".")
+    )
+
+
+def is_valid_snmp_community(community):
+    if not community:
+        return False
+    invalid_chars = {" ", '"', "'", "\n", "\t", "\r"}
+    return not any(c in community for c in invalid_chars)
+
+
+def is_safe_text(text):
+    return all(ord(c) >= 32 for c in text)
 
 
 def is_valid_prefix(prefix):
@@ -108,6 +141,7 @@ vlans_data = []
 interfaces_data = []
 static_routes_data = []
 port_channels_data = []
+acls_data = []
 config_data = {
     "hostname": "Device-Hostname",
     "snmp_community": "public",
@@ -127,6 +161,7 @@ def index():
         config=config_data,
         static_routes=static_routes_data,
         port_channels=port_channels_data,
+        acls=acls_data,
     )
 
 
@@ -147,6 +182,10 @@ def add_vlan():
             errors.append("Invalid VLAN ID. Must be between 1-4094.")
         if not vlan_name:
             errors.append("VLAN name is required.")
+        elif not is_safe_text(vlan_name):
+            errors.append("VLAN name cannot contain control characters.")
+        if description and not is_safe_text(description):
+            errors.append("Description cannot contain control characters.")
         if ip_address and not is_valid_ip(ip_address):
             errors.append("Invalid IP address.")
         if prefix_length and not is_valid_prefix(prefix_length):
@@ -162,11 +201,18 @@ def add_vlan():
             return render_template("vlan_form.html")
 
         helper_list = []
+        invalid_helpers = []
         if helper_addresses:
             for helper in helper_addresses.split(","):
                 helper = helper.strip()
-                if helper and is_valid_ip(helper):
+                if not helper:
+                    continue
+                if is_valid_ip(helper):
                     helper_list.append(helper)
+                else:
+                    invalid_helpers.append(helper)
+        if invalid_helpers:
+            flash(f"Invalid helper address(es) ignored: {', '.join(invalid_helpers)}", "warning")
 
         vlan_data = {
             "id": int(vlan_id),
@@ -210,6 +256,10 @@ def edit_vlan(vlan_id):
             errors.append("VLAN ID already exists.")
         if not vlan_name:
             errors.append("VLAN name is required.")
+        elif not is_safe_text(vlan_name):
+            errors.append("VLAN name cannot contain control characters.")
+        if description and not is_safe_text(description):
+            errors.append("Description cannot contain control characters.")
         if ip_address and not is_valid_ip(ip_address):
             errors.append("Invalid IP address.")
         if prefix_length and not is_valid_prefix(prefix_length):
@@ -223,11 +273,18 @@ def edit_vlan(vlan_id):
             return render_template("vlan_form.html", vlan=vlan, edit_mode=True)
 
         helper_list = []
+        invalid_helpers = []
         if helper_addresses:
             for helper in helper_addresses.split(","):
                 helper = helper.strip()
-                if helper and is_valid_ip(helper):
+                if not helper:
+                    continue
+                if is_valid_ip(helper):
                     helper_list.append(helper)
+                else:
+                    invalid_helpers.append(helper)
+        if invalid_helpers:
+            flash(f"Invalid helper address(es) ignored: {', '.join(invalid_helpers)}", "warning")
 
         vlan.update(
             {
@@ -272,6 +329,10 @@ def add_interface():
         errors = []
         if not interface_name:
             errors.append("Interface name is required.")
+        elif not is_safe_text(interface_name):
+            errors.append("Interface name cannot contain control characters.")
+        if description and not is_safe_text(description):
+            errors.append("Description cannot contain control characters.")
 
         if not is_aos_cx:
             if not mode or mode not in ["access", "trunk"]:
@@ -291,6 +352,18 @@ def add_interface():
             and not is_valid_vlan_list(allowed_vlans)
         ):
             errors.append("Invalid allowed VLANs format.")
+
+        if is_aos_cx:
+            aos_cx_type = request.form.get("aos_cx_type", "non-routed")
+            ip_address = request.form.get("ip_address", "").strip()
+            ip_prefix = request.form.get("prefix_length", "").strip()
+            if aos_cx_type == "routed":
+                if not ip_address:
+                    errors.append("IP address is required for AOS-CX routed interface.")
+                elif not is_valid_ip(ip_address):
+                    errors.append("Invalid AOS-CX IP address.")
+                if not ip_prefix:
+                    errors.append("Prefix length is required for AOS-CX routed interface.")
 
         if interface_name and any(i["name"] == interface_name for i in interfaces_data):
             errors.append("Interface name already exists.")
@@ -355,6 +428,22 @@ def edit_interface(interface_name):
 
         if not new_name:
             errors.append("Interface name is required.")
+        elif not is_safe_text(new_name):
+            errors.append("Interface name cannot contain control characters.")
+        if description and not is_safe_text(description):
+            errors.append("Description cannot contain control characters.")
+
+        if is_aos_cx:
+            edit_aos_cx_type = request.form.get("aos_cx_type", "non-routed")
+            edit_ip_address = request.form.get("ip_address", "").strip()
+            edit_ip_prefix = request.form.get("prefix_length", "").strip()
+            if edit_aos_cx_type == "routed":
+                if not edit_ip_address:
+                    errors.append("IP address is required for AOS-CX routed interface.")
+                elif not is_valid_ip(edit_ip_address):
+                    errors.append("Invalid AOS-CX IP address.")
+                if not edit_ip_prefix:
+                    errors.append("Prefix length is required for AOS-CX routed interface.")
 
         if (
             (not is_aos_cx or mode == "access")
@@ -460,31 +549,31 @@ def duplicate_interface(interface_name):
     return redirect(url_for("edit_interface", interface_name=new_name))
 
 
-@app.route("/add_static_route", methods=["POST"])
+@app.route("/add_static_route", methods=["GET", "POST"])
 def add_static_route():
-    network = request.form.get("network", "").strip()
-    prefix = request.form.get("prefix", "").strip()
-    gateway = request.form.get("gateway", "").strip()
-    description = request.form.get("description", "").strip()
-    errors = []
-    if not network or not is_valid_ip(network):
-        errors.append("Invalid network address.")
-    if not prefix or not is_valid_prefix(prefix):
-        errors.append("Invalid prefix length.")
-    if not gateway or not is_valid_ip(gateway):
-        errors.append("Invalid gateway address.")
-    if errors:
-        for error in errors:
-            flash(error, "error")
+    if request.method == "POST":
+        network = request.form.get("network", "").strip()
+        prefix = request.form.get("prefix", "").strip()
+        gateway = request.form.get("gateway", "").strip()
+        errors = []
+        if not network or not is_valid_ip(network):
+            errors.append("Invalid network address.")
+        if not prefix or not is_valid_prefix(prefix):
+            errors.append("Invalid prefix length.")
+        if not gateway or not is_valid_ip(gateway):
+            errors.append("Invalid gateway address.")
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            return render_template("static_route_form.html")
+        static_routes_data.append({
+            "network": network,
+            "prefix": int(prefix),
+            "gateway": gateway,
+        })
+        flash("Static route added.", "success")
         return redirect(url_for("index"))
-    static_routes_data.append({
-        "network": network,
-        "prefix": int(prefix),
-        "gateway": gateway,
-        "description": description if description else None,
-    })
-    flash("Static route added.", "success")
-    return redirect(url_for("index"))
+    return render_template("static_route_form.html")
 
 
 @app.route("/delete_static_route/<int:route_idx>")
@@ -505,7 +594,6 @@ def edit_static_route(route_idx):
         network = request.form.get("network", "").strip()
         prefix = request.form.get("prefix", "").strip()
         gateway = request.form.get("gateway", "").strip()
-        description = request.form.get("description", "").strip()
         errors = []
         if not network or not is_valid_ip(network):
             errors.append("Invalid network address.")
@@ -521,7 +609,6 @@ def edit_static_route(route_idx):
             "network": network,
             "prefix": int(prefix),
             "gateway": gateway,
-            "description": description if description else None,
         }
         flash("Static route updated.", "success")
         return redirect(url_for("index"))
@@ -564,8 +651,16 @@ def add_port_channel():
                 errors.append("Invalid Port-channel ID.")
         if pc_id and any(p["id"] == pc_id for p in port_channels_data):
             errors.append("Port-channel ID already exists.")
+        if description and not is_safe_text(description):
+            errors.append("Description cannot contain control characters.")
         if not member_interfaces_raw:
             errors.append("At least one member interface is required.")
+        else:
+            members = [m.strip() for m in member_interfaces_raw.split(",") if m.strip()]
+            if not members:
+                errors.append("At least one member interface is required.")
+            elif any(not is_safe_text(m) for m in members):
+                errors.append("Member interface names cannot contain control characters.")
         if not switchport_mode or switchport_mode not in ["access", "trunk"]:
             errors.append("Mode must be 'access' or 'trunk'.")
         if lacp_mode not in ["active", "passive", "on"]:
@@ -609,8 +704,16 @@ def edit_port_channel(pc_id):
         allowed_vlans = request.form.get("allowed_vlans", "").strip()
         shutdown = "shutdown" in request.form
         errors = []
+        if description and not is_safe_text(description):
+            errors.append("Description cannot contain control characters.")
         if not member_interfaces_raw:
             errors.append("At least one member interface is required.")
+        else:
+            members = [m.strip() for m in member_interfaces_raw.split(",") if m.strip()]
+            if not members:
+                errors.append("At least one member interface is required.")
+            elif any(not is_safe_text(m) for m in members):
+                errors.append("Member interface names cannot contain control characters.")
         if not switchport_mode or switchport_mode not in ["access", "trunk"]:
             errors.append("Mode must be 'access' or 'trunk'.")
         if lacp_mode not in ["active", "passive", "on"]:
@@ -645,6 +748,192 @@ def delete_port_channel(pc_id):
     return redirect(url_for("index"))
 
 
+def _parse_acl_entries(form):
+    entries = []
+    i = 0
+    while f"entry_action_{i}" in form:
+        action = form.get(f"entry_action_{i}", "").strip()
+        if not action:
+            i += 1
+            continue
+        sequence_raw = form.get(f"entry_sequence_{i}", "").strip()
+        sequence = int(sequence_raw) if sequence_raw.isdigit() else None
+        source_prefix_raw = form.get(f"entry_source_prefix_{i}", "").strip()
+        dest_prefix_raw = form.get(f"entry_dest_prefix_{i}", "").strip()
+        entries.append({
+            "sequence": sequence,
+            "action": action,
+            "protocol": form.get(f"entry_protocol_{i}", "ip").strip() or "ip",
+            "source_type": form.get(f"entry_source_type_{i}", "any").strip(),
+            "source": form.get(f"entry_source_{i}", "").strip() or None,
+            "source_prefix": int(source_prefix_raw) if source_prefix_raw.isdigit() else None,
+            "dest_type": form.get(f"entry_dest_type_{i}", "any").strip(),
+            "dest": form.get(f"entry_dest_{i}", "").strip() or None,
+            "dest_prefix": int(dest_prefix_raw) if dest_prefix_raw.isdigit() else None,
+            "remark": form.get(f"entry_remark_{i}", "").strip() or None,
+        })
+        i += 1
+    return entries
+
+
+def _validate_acl_form(form, existing_idx=None):
+    errors = []
+    name = form.get("name", "").strip()
+    acl_type = form.get("type", "").strip()
+    description = form.get("description", "").strip()
+    apply_interface = form.get("apply_interface", "").strip()
+    apply_direction = form.get("apply_direction", "").strip()
+
+    if not name:
+        errors.append("ACL name is required.")
+    elif " " in name:
+        errors.append("ACL name cannot contain spaces.")
+    elif not is_safe_text(name):
+        errors.append("ACL name cannot contain control characters.")
+    if acl_type not in ["standard", "extended"]:
+        errors.append("ACL type must be 'standard' or 'extended'.")
+    if description and not is_safe_text(description):
+        errors.append("ACL description cannot contain control characters.")
+    if apply_interface and not is_safe_text(apply_interface):
+        errors.append("Apply interface cannot contain control characters.")
+    if apply_direction and apply_direction not in ["inbound", "outbound"]:
+        errors.append("Direction must be 'inbound' or 'outbound'.")
+
+    entries = _parse_acl_entries(form)
+    if not entries:
+        errors.append("At least one ACL entry is required.")
+    if entries:
+        has_seq = [e["sequence"] is not None for e in entries]
+        if any(has_seq) and not all(has_seq):
+            errors.append("Sequence numbers must be defined for all entries or for none.")
+        seq_values = [e["sequence"] for e in entries if e["sequence"] is not None]
+        if len(seq_values) != len(set(seq_values)):
+            errors.append("Duplicate sequence numbers are not allowed.")
+        invalid_seqs = [e["sequence"] for e in entries if e["sequence"] is not None and not (1 <= e["sequence"] <= 4294967295)]
+        if invalid_seqs:
+            errors.append("Sequence numbers must be between 1 and 4294967295.")
+        entry_signatures = [
+            (e["action"], e["protocol"], e["source_type"], e["source"], e["source_prefix"],
+             e["dest_type"], e["dest"], e["dest_prefix"])
+            for e in entries
+        ]
+        if len(entry_signatures) != len(set(entry_signatures)):
+            errors.append("Duplicate entries are not allowed within the same ACL.")
+    for i, entry in enumerate(entries):
+        if entry["action"] not in ["permit", "deny"]:
+            errors.append(f"Entry {i+1}: action must be 'permit' or 'deny'.")
+        if entry["remark"] and not is_safe_text(entry["remark"]):
+            errors.append(f"Entry {i+1}: remark cannot contain control characters.")
+        if entry["source_type"] == "network":
+            if not entry["source"] or not is_valid_ip(entry["source"]):
+                errors.append(f"Entry {i+1}: invalid source network address.")
+            if entry["source_prefix"] is None or not is_valid_prefix(entry["source_prefix"]):
+                errors.append(f"Entry {i+1}: invalid source prefix length.")
+        elif entry["source_type"] == "host":
+            if not entry["source"] or not is_valid_ip(entry["source"]):
+                errors.append(f"Entry {i+1}: invalid source host address.")
+        if acl_type == "extended":
+            if entry["dest_type"] == "network":
+                if not entry["dest"] or not is_valid_ip(entry["dest"]):
+                    errors.append(f"Entry {i+1}: invalid destination network address.")
+                if entry["dest_prefix"] is None or not is_valid_prefix(entry["dest_prefix"]):
+                    errors.append(f"Entry {i+1}: invalid destination prefix length.")
+            elif entry["dest_type"] == "host":
+                if not entry["dest"] or not is_valid_ip(entry["dest"]):
+                    errors.append(f"Entry {i+1}: invalid destination host address.")
+    return errors, name, acl_type, entries
+
+
+@app.route("/add_acl", methods=["GET", "POST"])
+def add_acl():
+    if request.method == "POST":
+        errors, name, acl_type, entries = _validate_acl_form(request.form)
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            temp_acl = {
+                "name": name,
+                "type": acl_type,
+                "description": request.form.get("description", "").strip(),
+                "apply_interface": request.form.get("apply_interface", "").strip() or None,
+                "apply_direction": request.form.get("apply_direction", "inbound"),
+                "entries": entries,
+            }
+            return render_template("acl_form.html", acl=temp_acl)
+        description = request.form.get("description", "").strip()
+        apply_interface = request.form.get("apply_interface", "").strip()
+        apply_direction = request.form.get("apply_direction", "inbound").strip()
+        acls_data.append({
+            "name": name,
+            "type": acl_type,
+            "description": description if description else None,
+            "apply_interface": apply_interface if apply_interface else None,
+            "apply_direction": apply_direction if apply_interface else None,
+            "entries": entries,
+        })
+        flash(f"ACL '{name}' added successfully!", "success")
+        return redirect(url_for("index"))
+    return render_template("acl_form.html")
+
+
+@app.route("/edit_acl/<int:idx>", methods=["GET", "POST"])
+def edit_acl(idx):
+    if idx < 0 or idx >= len(acls_data):
+        flash("ACL not found.", "error")
+        return redirect(url_for("index"))
+    acl = acls_data[idx]
+    if request.method == "POST":
+        errors, name, acl_type, entries = _validate_acl_form(request.form, existing_idx=idx)
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            temp_acl = {
+                "name": name,
+                "type": acl_type,
+                "description": request.form.get("description", "").strip(),
+                "apply_interface": request.form.get("apply_interface", "").strip() or None,
+                "apply_direction": request.form.get("apply_direction", "inbound"),
+                "entries": entries,
+            }
+            return render_template("acl_form.html", acl=temp_acl, idx=idx, edit_mode=True)
+        description = request.form.get("description", "").strip()
+        apply_interface = request.form.get("apply_interface", "").strip()
+        apply_direction = request.form.get("apply_direction", "inbound").strip()
+        acl.update({
+            "name": name,
+            "type": acl_type,
+            "description": description if description else None,
+            "apply_interface": apply_interface if apply_interface else None,
+            "apply_direction": apply_direction if apply_interface else None,
+            "entries": entries,
+        })
+        flash(f"ACL '{name}' updated successfully!", "success")
+        return redirect(url_for("index"))
+    return render_template("acl_form.html", acl=acl, idx=idx, edit_mode=True)
+
+
+@app.route("/delete_acl/<int:idx>")
+def delete_acl(idx):
+    if 0 <= idx < len(acls_data):
+        name = acls_data[idx]["name"]
+        acls_data.pop(idx)
+        flash(f"ACL '{name}' deleted.", "success")
+    return redirect(url_for("index"))
+
+
+@app.route("/duplicate_acl/<int:idx>")
+def duplicate_acl(idx):
+    if idx < 0 or idx >= len(acls_data):
+        flash("ACL not found.", "error")
+        return redirect(url_for("index"))
+    new_acl = copy.deepcopy(acls_data[idx])
+    new_acl["name"] = new_acl["name"] + "-copy"
+    acls_data.append(new_acl)
+    new_idx = len(acls_data) - 1
+    flash(f"ACL duplicated.", "success")
+    return redirect(url_for("edit_acl", idx=new_idx))
+
+
 @app.route("/update_config", methods=["POST"])
 def update_config():
     hostname = request.form.get("hostname", "").strip()
@@ -654,19 +943,41 @@ def update_config():
     dns_server = request.form.get("dns_server", "").strip()
     gateway = request.form.get("gateway", "").strip()
 
-    if hostname:
-        config_data["hostname"] = hostname
+    errors = []
 
+    if not hostname:
+        errors.append("Hostname is required.")
+    elif not is_safe_text(hostname):
+        errors.append("Hostname cannot contain control characters.")
+
+    if snmp_community and not is_valid_snmp_community(snmp_community):
+        errors.append("SNMP community must not contain spaces or quotes.")
+
+    if ntp_server and not is_valid_hostname(ntp_server):
+        errors.append("Invalid NTP server address.")
+
+    if syslog_server and not is_valid_hostname(syslog_server):
+        errors.append("Invalid Syslog server address.")
+
+    if dns_server and not is_valid_ip(dns_server):
+        errors.append("Invalid DNS server IP address.")
+
+    if gateway and not is_valid_ip(gateway):
+        errors.append("Invalid default gateway IP address.")
+
+    if errors:
+        for error in errors:
+            flash(error, "error")
+        return redirect(url_for("index"))
+
+    config_data["hostname"] = hostname
     config_data["snmp_community"] = snmp_community
     config_data["ntp_server"] = ntp_server
     config_data["syslog_server"] = syslog_server
     config_data["dns_server"] = dns_server
 
-    if gateway and is_valid_ip(gateway):
+    if gateway:
         config_data["default_route"]["gateway"] = gateway
-    elif gateway:
-        flash("Invalid gateway IP address.", "error")
-        return redirect(url_for("index"))
 
     flash("Configuration updated successfully!", "success")
     return redirect(url_for("index"))
@@ -697,6 +1008,10 @@ def generate_config(platform):
         }
 
         config_output = template.render(**template_data)
+
+        if acls_data:
+            acl_template = config_env.get_template(f"acl/{platform}_acl.j2")
+            config_output += "\n" + acl_template.render(acls=acls_data)
 
         response = make_response(config_output)
         response.headers["Content-Type"] = "text/plain"
@@ -735,6 +1050,11 @@ def preview_config(platform):
         }
 
         config_output = template.render(**template_data)
+
+        if acls_data:
+            acl_template = config_env.get_template(f"acl/{platform}_acl.j2")
+            config_output += "\n" + acl_template.render(acls=acls_data)
+
         return jsonify({"config": config_output})
 
     except Exception as e:

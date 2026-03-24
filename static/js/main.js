@@ -41,11 +41,21 @@ document.addEventListener('DOMContentLoaded', function() {
         return !isNaN(vlan) && vlan >= 1 && vlan <= 4094;
     };
 
-    const ipInputs = document.querySelectorAll('input[name="ip_address"], input[name="gateway"]');
+    window.validateHostname = function(h) {
+        if (validateIP(h)) return true;
+        if (!h || h.length > 253) return false;
+        return h.split('.').every(label =>
+            label.length > 0 && label.length <= 63 &&
+            !label.startsWith('-') && !label.endsWith('-') &&
+            /^[a-zA-Z0-9-]+$/.test(label)
+        );
+    };
+
+    const ipInputs = document.querySelectorAll('input[name="ip_address"], input[name="gateway"], input[name="network"]');
     ipInputs.forEach(input => {
         input.addEventListener('blur', function() {
             if (this.value && !validateIP(this.value)) {
-                this.setCustomValidity('Invalid IP');
+                this.setCustomValidity('Invalid IP address');
                 this.classList.add('is-invalid');
             } else {
                 this.setCustomValidity('');
@@ -53,6 +63,46 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    const hostnameInputs = document.querySelectorAll('input[name="ntp_server"], input[name="syslog_server"]');
+    hostnameInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.value && !validateHostname(this.value)) {
+                this.setCustomValidity('Invalid address');
+                this.classList.add('is-invalid');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+            }
+        });
+    });
+
+    const dnsInput = document.querySelector('input[name="dns_server"]');
+    if (dnsInput) {
+        dnsInput.addEventListener('blur', function() {
+            if (this.value && !validateIP(this.value)) {
+                this.setCustomValidity('Invalid IP address');
+                this.classList.add('is-invalid');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+
+    const snmpInput = document.querySelector('input[name="snmp_community"]');
+    if (snmpInput) {
+        snmpInput.addEventListener('blur', function() {
+            const invalid = this.value && /[\s"']/.test(this.value);
+            if (invalid) {
+                this.setCustomValidity('Must not contain spaces or quotes');
+                this.classList.add('is-invalid');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
 
     const vlanInputs = document.querySelectorAll('input[name="vlan_id"], input[name="access_vlan"], input[name="voice_vlan"], input[name="allowed_vlans"]');
     vlanInputs.forEach(input => {
@@ -63,14 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 this.setCustomValidity('');
                 this.classList.remove('is-invalid');
-            }
-        });
-    });
-
-    document.querySelectorAll('a[href*="/delete_"]').forEach(link => {
-        link.addEventListener('click', function(event) {
-            if (!confirm('Are you sure? This action cannot be undone.')) {
-                event.preventDefault();
             }
         });
     });
@@ -86,24 +128,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const aosCxRadios = document.getElementsByName('aos_cx_type');
         const modeContainer = document.getElementById('mode_container');
 
+        const ipAddressInput = document.getElementById('ip_address');
+        const prefixLengthInput = document.getElementById('prefix_length');
+        const ipRequiredStar = document.getElementById('ip_required_star');
+        const prefixRequiredStar = document.getElementById('prefix_required_star');
+
         function toggleModeFields() {
             const isAosCx = isAosCxCheckbox.checked;
             const aosCxType = Array.from(aosCxRadios).find(r => r.checked)?.value || 'non-routed';
             const mode = modeSelect.value;
+            const isRoutedAosCx = isAosCx && aosCxType === 'routed';
 
             if (aosCxOptions) aosCxOptions.style.display = isAosCx ? 'block' : 'none';
-            
-            if (isAosCx && aosCxType === 'routed') {
+
+            if (isRoutedAosCx) {
                 if (aosCxRoutedFields) aosCxRoutedFields.style.display = 'block';
                 if (modeContainer) modeContainer.style.display = 'none';
                 if (accessFields) accessFields.style.display = 'none';
                 if (trunkFields) trunkFields.style.display = 'none';
+                if (ipAddressInput) ipAddressInput.required = true;
+                if (prefixLengthInput) prefixLengthInput.required = true;
+                if (ipRequiredStar) ipRequiredStar.style.display = '';
+                if (prefixRequiredStar) prefixRequiredStar.style.display = '';
             } else {
                 if (aosCxRoutedFields) aosCxRoutedFields.style.display = 'none';
                 if (modeContainer) modeContainer.style.display = 'block';
-                
                 if (accessFields) accessFields.style.display = (mode === 'access') ? 'block' : 'none';
                 if (trunkFields) trunkFields.style.display = (mode === 'trunk') ? 'block' : 'none';
+                if (ipAddressInput) { ipAddressInput.required = false; ipAddressInput.setCustomValidity(''); ipAddressInput.classList.remove('is-invalid'); }
+                if (prefixLengthInput) { prefixLengthInput.required = false; prefixLengthInput.setCustomValidity(''); prefixLengthInput.classList.remove('is-invalid'); }
+                if (ipRequiredStar) ipRequiredStar.style.display = 'none';
+                if (prefixRequiredStar) prefixRequiredStar.style.display = 'none';
             }
         }
 
@@ -127,6 +182,77 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleIpFields();
     }
 });
+
+function addAclEntry() {
+    const template = document.getElementById('entry-row-template');
+    if (!template) return;
+    const tbody = document.getElementById('entries-body');
+    const idx = tbody.querySelectorAll('tr').length;
+    const clone = template.content.cloneNode(true);
+    clone.querySelectorAll('[name]').forEach(el => {
+        el.name = el.name.replace('__IDX__', idx);
+    });
+    tbody.appendChild(clone);
+    applyAclTypeVisibility();
+}
+
+function removeAclEntry(btn) {
+    const row = btn.closest('tr');
+    const tbody = document.getElementById('entries-body');
+    row.remove();
+    tbody.querySelectorAll('tr').forEach((tr, newIdx) => {
+        tr.querySelectorAll('[name]').forEach(el => {
+            el.name = el.name.replace(/_\d+$/, '_' + newIdx);
+        });
+    });
+}
+
+function toggleSrcFields(sel) {
+    const row = sel.closest('tr');
+    const srcInput = row.querySelector('.src-ip');
+    const prefixInput = row.querySelector('.src-prefix');
+    if (!srcInput || !prefixInput) return;
+    if (sel.value === 'any') {
+        srcInput.disabled = true; srcInput.value = '';
+        prefixInput.disabled = true; prefixInput.value = '';
+    } else if (sel.value === 'host') {
+        srcInput.disabled = false;
+        prefixInput.disabled = true; prefixInput.value = '';
+    } else {
+        srcInput.disabled = false;
+        prefixInput.disabled = false;
+    }
+}
+
+function toggleDstFields(sel) {
+    const row = sel.closest('tr');
+    const dstInput = row.querySelector('.dst-ip');
+    const prefixInput = row.querySelector('.dst-prefix');
+    if (!dstInput || !prefixInput) return;
+    if (sel.value === 'any') {
+        dstInput.disabled = true; dstInput.value = '';
+        prefixInput.disabled = true; prefixInput.value = '';
+    } else if (sel.value === 'host') {
+        dstInput.disabled = false;
+        prefixInput.disabled = true; prefixInput.value = '';
+    } else {
+        dstInput.disabled = false;
+        prefixInput.disabled = false;
+    }
+}
+
+function applyAclTypeVisibility() {
+    const typeSelect = document.getElementById('acl_type');
+    if (!typeSelect) return;
+    const isExtended = typeSelect.value === 'extended';
+    document.querySelectorAll('.acl-extended-col').forEach(el => {
+        el.style.display = isExtended ? '' : 'none';
+    });
+}
+
+function toggleAclType() {
+    applyAclTypeVisibility();
+}
 
 function previewConfig(platform) {
     const modalEl = document.getElementById('configPreviewModal');
