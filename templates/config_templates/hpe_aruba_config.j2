@@ -89,10 +89,8 @@ interface Bridge-Aggregation {{ pc.id }}
   port link-type trunk
   port trunk permit vlan {{ pc.allowed_vlans }}
 {% endif %}
-{% if pc.lacp_mode == 'on' %}
-  link-aggregation mode static
-{% else %}
-  lacp mode {{ pc.lacp_mode }}
+{% if pc.lacp_mode != 'on' %}
+  link-aggregation mode dynamic
 {% endif %}
 {% if pc.shutdown %}
   shutdown
