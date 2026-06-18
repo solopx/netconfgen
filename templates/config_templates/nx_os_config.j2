@@ -49,7 +49,9 @@ interface {{ interface.name }}
   description {{ interface.description }}
 {% endif %}
   switchport
+{% if interface.mode %}
   switchport mode {{ interface.mode }}
+{% endif %}
 {% if interface.mode == 'access' %}
   switchport access vlan {{ interface.access_vlan }}
 {% if interface.voice_vlan is defined and interface.voice_vlan %}
